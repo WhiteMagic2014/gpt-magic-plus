@@ -1,14 +1,14 @@
-package io.github.WhiteMagic2014;
+package com.github.WhiteMagic2014;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.github.WhiteMagic2014.beans.ChatLog;
 import com.github.WhiteMagic2014.gptApi.Chat.CreateChatCompletionRequest;
 import com.github.WhiteMagic2014.gptApi.Embeddings.CreateEmbeddingsRequest;
 import com.github.WhiteMagic2014.gptApi.Images.CreateImageRequest;
 import com.github.WhiteMagic2014.util.Distance;
-import io.github.WhiteMagic2014.beans.ChatLog;
-import io.github.WhiteMagic2014.beans.DataEmbedding;
-import io.github.WhiteMagic2014.beans.GptMessage;
+import com.github.WhiteMagic2014.beans.DataEmbedding;
+import com.github.WhiteMagic2014.beans.GptMessage;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;

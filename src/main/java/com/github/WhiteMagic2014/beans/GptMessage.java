@@ -1,4 +1,4 @@
-package io.github.WhiteMagic2014.beans;
+package com.github.WhiteMagic2014.beans;
 
 public class GptMessage {
 
