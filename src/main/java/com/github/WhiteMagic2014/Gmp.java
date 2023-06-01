@@ -3,12 +3,12 @@ package com.github.WhiteMagic2014;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.github.WhiteMagic2014.beans.ChatLog;
+import com.github.WhiteMagic2014.beans.DataEmbedding;
+import com.github.WhiteMagic2014.beans.GptMessage;
 import com.github.WhiteMagic2014.gptApi.Chat.CreateChatCompletionRequest;
 import com.github.WhiteMagic2014.gptApi.Embeddings.CreateEmbeddingsRequest;
 import com.github.WhiteMagic2014.gptApi.Images.CreateImageRequest;
 import com.github.WhiteMagic2014.util.Distance;
-import com.github.WhiteMagic2014.beans.DataEmbedding;
-import com.github.WhiteMagic2014.beans.GptMessage;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
@@ -128,19 +128,32 @@ public class Gmp {
             return "很抱歉，出错了";
         }
         // 记忆上下文
+        addChatLog(session, prompt, result);
+        return result;
+    }
+
+
+    /**
+     * 记忆上下文
+     */
+    public void addChatLog(String session, String user, String assistant) {
         if (logs.containsKey(session)) {
             Queue<ChatLog> queue = logs.get(session);
             if (queue.size() > maxLog) {
                 queue.poll();
             }
-            queue.offer(new ChatLog(prompt, result));
+            queue.offer(new ChatLog(user, assistant));
         } else {
             Queue<ChatLog> queue = new LinkedList<>();
-            queue.offer(new ChatLog(prompt, result));
+            queue.offer(new ChatLog(user, assistant));
             logs.put(session, queue);
         }
-        return result;
     }
+
+    public void setChatLog(String session, Queue<ChatLog> chatLogs) {
+        logs.put(session, chatLogs);
+    }
+
 
     public String chat(String session, String prompt) {
         return chat(session, prompt, 500);

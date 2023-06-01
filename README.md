@@ -25,6 +25,10 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.0.1
+
+- 对话记忆可编辑
+
 ### 1.0.0
 
 - 拥有记忆功能的对话
