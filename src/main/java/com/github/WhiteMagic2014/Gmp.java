@@ -1,5 +1,6 @@
 package com.github.WhiteMagic2014;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.github.WhiteMagic2014.beans.ChatLog;
@@ -11,13 +12,17 @@ import com.github.WhiteMagic2014.gptApi.Images.CreateImageRequest;
 import com.github.WhiteMagic2014.util.Distance;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class Gmp {
 
     private Map<String, Queue<ChatLog>> logs = new HashMap<>(); // 对话上下文
     private Map<String, String> personality = new HashMap<>(); //性格设定
+    private ExecutorService executorService = Executors.newFixedThreadPool(50);// 线程池
 
     private int maxLog = 5; // 最大记忆层数
 
@@ -79,6 +84,68 @@ public class Gmp {
 
     public String originChat(List<GptMessage> messages) {
         return originChat(messages, 500);
+    }
+
+
+    public String originChatStream(List<GptMessage> messages, int maxTokens) {
+        StringBuilder sb = new StringBuilder();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        executorService.execute(() -> {
+                    CreateChatCompletionRequest request = new CreateChatCompletionRequest()
+                            .key(key)
+                            .maxTokens(maxTokens)
+                            .stream(true)
+                            .outputStream(baos);
+                    if (StringUtils.isNotBlank(server)) {
+                        request.server(server);
+                    }
+                    if (StringUtils.isNotBlank(org)) {
+                        request.organization(org);
+                    }
+                    for (GptMessage msg : messages) {
+                        request.addMessage(msg.getRole(), msg.getPrompt());
+                    }
+                    request.send();
+                }
+        );
+        boolean flag = true;
+        while (flag) {
+            byte[] data = baos.toByteArray();
+            if (data.length > 0) {
+                String result = new String(data);
+                baos.reset();
+                String str = "[" + result.replace("data: [DONE]", "").replace("data:", ",") + "]";
+                JSONArray jsonArray;
+                try {
+                    jsonArray = JSON.parseArray(str);
+                } catch (Exception e) {
+                    System.out.println(str);
+                    return "很抱歉，出错了";
+                }
+                for (int i = 0; i < jsonArray.size(); i++) {
+                    JSONObject choice = jsonArray.getJSONObject(i).getJSONArray("choices").getJSONObject(0);
+                    if ("stop".equals(choice.getString("finish_reason"))) {
+                        flag = false;
+                        break;
+                    }
+                    JSONObject delta = choice.getJSONObject("delta");
+                    if (delta.containsKey("content")) {
+                        sb.append(delta.getString("content"));
+                    }
+                }
+            }
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return sb.toString();
+    }
+
+
+    public String originChatStream(List<GptMessage> messages) {
+        return originChatStream(messages, 500);
     }
 
 

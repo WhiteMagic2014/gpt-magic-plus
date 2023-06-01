@@ -25,6 +25,10 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.0.2
+
+- originChat 新增Stream返回模式，可有效避免生成结果所需时间过长，导致超时的问题
+
 ### 1.0.1
 
 - 对话记忆可编辑
