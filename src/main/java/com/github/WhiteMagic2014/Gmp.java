@@ -14,15 +14,12 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class Gmp {
 
     private Map<String, Queue<ChatLog>> logs = new HashMap<>(); // 对话上下文
     private Map<String, String> personality = new HashMap<>(); //性格设定
-    private ExecutorService executorService = Executors.newFixedThreadPool(50);// 线程池
 
     private int maxLog = 5; // 最大记忆层数
 
@@ -60,7 +57,7 @@ public class Gmp {
         this.org = org;
     }
 
-    public String originChat(List<GptMessage> messages, int maxTokens) {
+    public String originChat(List<GptMessage> messages, int maxTokens, boolean stream) {
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
                 .key(key)
                 .maxTokens(maxTokens);
@@ -75,7 +72,11 @@ public class Gmp {
         }
         String result = "";
         try {
-            result = request.sendForChoices().get(0).getMessage().getContent();
+            if (stream) {
+                result = streamRequest(request);
+            } else {
+                result = request.sendForChoices().get(0).getMessage().getContent();
+            }
         } catch (Exception e) {
             return "很抱歉，出错了";
         }
@@ -83,80 +84,17 @@ public class Gmp {
     }
 
     public String originChat(List<GptMessage> messages) {
-        return originChat(messages, 500);
+        return originChat(messages, 500, false);
     }
 
 
-    public String originChatStream(List<GptMessage> messages, int maxTokens) {
-        StringBuilder sb = new StringBuilder();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        executorService.execute(() -> {
-                    CreateChatCompletionRequest request = new CreateChatCompletionRequest()
-                            .key(key)
-                            .maxTokens(maxTokens)
-                            .stream(true)
-                            .outputStream(baos);
-                    if (StringUtils.isNotBlank(server)) {
-                        request.server(server);
-                    }
-                    if (StringUtils.isNotBlank(org)) {
-                        request.organization(org);
-                    }
-                    for (GptMessage msg : messages) {
-                        request.addMessage(msg.getRole(), msg.getPrompt());
-                    }
-                    request.send();
-                }
-        );
-        boolean flag = true;
-        while (flag) {
-            byte[] data = baos.toByteArray();
-            if (data.length > 0) {
-                String result = new String(data);
-                baos.reset();
-                String str = "[" + result.replace("data: [DONE]", "").replace("data:", ",") + "]";
-                JSONArray jsonArray;
-                try {
-                    jsonArray = JSON.parseArray(str);
-                } catch (Exception e) {
-                    System.out.println(str);
-                    return "很抱歉，出错了";
-                }
-                for (int i = 0; i < jsonArray.size(); i++) {
-                    JSONObject choice = jsonArray.getJSONObject(i).getJSONArray("choices").getJSONObject(0);
-                    if ("stop".equals(choice.getString("finish_reason"))) {
-                        flag = false;
-                        break;
-                    }
-                    JSONObject delta = choice.getJSONObject("delta");
-                    if (delta.containsKey("content")) {
-                        sb.append(delta.getString("content"));
-                    }
-                }
-            }
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        return sb.toString();
-    }
-
-
-    public String originChatStream(List<GptMessage> messages) {
-        return originChatStream(messages, 500);
-    }
-
-
-    public String chat(String session, String prompt, int maxTokens) {
+    public String chat(String session, String prompt, int maxTokens, boolean stream) {
         String personal = personality.getOrDefault(session, "与用户进行闲聊或娱乐性的对话，以改善用户体验。");
         // 构造初始请求
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
                 .key(key)
                 .maxTokens(maxTokens)
                 .addMessage("system", personal);
-        // 如果配置了代理服务器，则使用代理服务
         if (StringUtils.isNotBlank(server)) {
             request.server(server);
         }
@@ -176,7 +114,11 @@ public class Gmp {
         // 发送请求
         String result = "";
         try {
-            result = request.sendForChoices().get(0).getMessage().getContent();
+            if (stream) {
+                result = streamRequest(request);
+            } else {
+                result = request.sendForChoices().get(0).getMessage().getContent();
+            }
         } catch (Exception e) {
             try {
                 JSONObject js = JSONObject.parseObject(e.getMessage());
@@ -186,7 +128,7 @@ public class Gmp {
                         Queue<ChatLog> queue = logs.get(session);
                         queue.poll();
                         // 再次请求
-                        return chat(session, prompt, maxTokens);
+                        return chat(session, prompt, maxTokens, stream);
                     }
                 }
             } catch (Exception ex) {
@@ -200,8 +142,62 @@ public class Gmp {
     }
 
 
+    public String chat(String session, String prompt) {
+        return chat(session, prompt, 500, false);
+    }
+
+
+    public String streamRequest(CreateChatCompletionRequest request) {
+        StringBuilder sb = new StringBuilder();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        request.stream(true).outputStream(baos).send();
+        byte[] data = baos.toByteArray();
+        if (data.length > 0) {
+            String result = new String(data);
+            baos.reset();
+            String str = "[" + result.replace("data: [DONE]", "").replace("data:", ",") + "]";
+            JSONArray jsonArray = JSON.parseArray(str);
+            for (int i = 0; i < jsonArray.size(); i++) {
+                JSONObject choice = jsonArray.getJSONObject(i).getJSONArray("choices").getJSONObject(0);
+                if ("stop".equals(choice.getString("finish_reason"))) {
+                    break;
+                }
+                JSONObject delta = choice.getJSONObject("delta");
+                if (delta.containsKey("content")) {
+                    sb.append(delta.getString("content"));
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+
     /**
-     * 记忆上下文
+     * 设置 对话性格
+     *
+     * @param session
+     * @param setting
+     * @return
+     */
+    public String setPersonality(String session, String setting) {
+        personality.put(session, setting);
+        return "已经设定为: " + setting;
+    }
+
+
+    /**
+     * 清除记忆上下文
+     *
+     * @param session
+     * @return
+     */
+    public String clearLog(String session) {
+        logs.remove(session);
+        return "操作成功";
+    }
+
+    /**
+     * 增添记忆上下文
      */
     public void addChatLog(String session, String user, String assistant) {
         if (logs.containsKey(session)) {
@@ -217,32 +213,29 @@ public class Gmp {
         }
     }
 
+    /**
+     * 设置记忆上下文
+     *
+     * @param session
+     * @param chatLogs
+     */
     public void setChatLog(String session, Queue<ChatLog> chatLogs) {
         logs.put(session, chatLogs);
     }
 
-
-    public String chat(String session, String prompt) {
-        return chat(session, prompt, 500);
-    }
-
-    public String setPersonality(String session, String setting) {
-        personality.put(session, setting);
-        return "已经设定为: " + setting;
-    }
-
-    public String clearLog(String session) {
-        logs.remove(session);
-        return "操作成功";
-    }
-
+    /**
+     * 作图
+     *
+     * @param prompt
+     * @param n
+     * @return
+     */
     public List<String> image(String prompt, int n) {
         CreateImageRequest request = new CreateImageRequest()
                 .key(key)
                 .prompt(prompt)
                 .n(n)
                 .largeSize();
-        // 如果配置了代理服务器，则使用代理服务
         if (StringUtils.isNotBlank(server)) {
             request.server(server);
         }
@@ -265,10 +258,15 @@ public class Gmp {
     }
 
 
+    /**
+     * 文本转向量
+     *
+     * @param inputs
+     * @return
+     */
     public List<List<Double>> input2Vector(List<String> inputs) {
         CreateEmbeddingsRequest request = new CreateEmbeddingsRequest()
                 .key(key);
-        // 如果配置了代理服务器，则使用代理服务
         if (StringUtils.isNotBlank(server)) {
             request.server(server);
         }
@@ -282,7 +280,14 @@ public class Gmp {
         return request.sendForEmbeddings();
     }
 
-
+    /**
+     * 根据训练集 回答问题
+     *
+     * @param question       问题
+     * @param dataEmbeddings 训练集
+     * @param vectorNum      使用数据片段数量
+     * @return
+     */
     public String answer(String question, List<DataEmbedding> dataEmbeddings, int vectorNum) {
         if (dataEmbeddings.isEmpty()) {
             return "无预训练数据";

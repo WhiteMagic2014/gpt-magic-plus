@@ -25,6 +25,10 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.0.3
+
+- 优化Stream为可选参数,originChat和chat都将支持Stream返回，注意这里返回的仍是string，没有任何影响。仅是发送请求时获取方式为string
+
 ### 1.0.2
 
 - originChat 新增Stream返回模式，可有效避免生成结果所需时间过长，导致超时的问题
