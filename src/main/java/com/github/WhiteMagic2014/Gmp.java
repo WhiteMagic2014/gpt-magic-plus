@@ -1,6 +1,5 @@
 package com.github.WhiteMagic2014;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.github.WhiteMagic2014.beans.ChatLog;
@@ -14,6 +13,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Gmp {
@@ -155,18 +156,28 @@ public class Gmp {
         if (data.length > 0) {
             String result = new String(data);
             baos.reset();
-            String str = "[" + result.replace("data: [DONE]", "").replace("data:", ",") + "]";
-            JSONArray jsonArray = JSON.parseArray(str);
-            for (int i = 0; i < jsonArray.size(); i++) {
-                JSONObject choice = jsonArray.getJSONObject(i).getJSONArray("choices").getJSONObject(0);
-                if ("stop".equals(choice.getString("finish_reason"))) {
-                    break;
-                }
-                JSONObject delta = choice.getJSONObject("delta");
-                if (delta.containsKey("content")) {
-                    sb.append(delta.getString("content"));
-                }
+
+            // 用正则截取 效率更高
+            String pattern = "(?<=\"content\":\").*?(?=\\\"})";
+            Pattern regex = Pattern.compile(pattern);
+            Matcher matcher = regex.matcher(result);
+            while (matcher.find()) {
+                sb.append(matcher.group(0).replace("\\n", "\n").replace("\\r","\r"));
             }
+
+            // 转jsonArray提取
+//            String str = "[" + result.replace("data: [DONE]", "").replace("data:", ",") + "]";
+//            JSONArray jsonArray = JSON.parseArray(str);
+//            for (int i = 0; i < jsonArray.size(); i++) {
+//                JSONObject choice = jsonArray.getJSONObject(i).getJSONArray("choices").getJSONObject(0);
+//                if ("stop".equals(choice.getString("finish_reason"))) {
+//                    break;
+//                }
+//                JSONObject delta = choice.getJSONObject("delta");
+//                if (delta.containsKey("content")) {
+//                    sb.append(delta.getString("content"));
+//                }
+//            }
         }
         return sb.toString();
     }
