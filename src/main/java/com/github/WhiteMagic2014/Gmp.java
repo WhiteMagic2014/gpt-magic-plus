@@ -4,8 +4,8 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.github.WhiteMagic2014.beans.ChatLog;
 import com.github.WhiteMagic2014.beans.DataEmbedding;
-import com.github.WhiteMagic2014.beans.GptMessage;
 import com.github.WhiteMagic2014.gptApi.Chat.CreateChatCompletionRequest;
+import com.github.WhiteMagic2014.gptApi.Chat.pojo.ChatMessage;
 import com.github.WhiteMagic2014.gptApi.Embeddings.CreateEmbeddingsRequest;
 import com.github.WhiteMagic2014.gptApi.Images.CreateImageRequest;
 import com.github.WhiteMagic2014.util.Distance;
@@ -22,7 +22,7 @@ public class Gmp {
     private Map<String, Queue<ChatLog>> logs = new HashMap<>(); // 对话上下文
     private Map<String, String> personality = new HashMap<>(); //性格设定
 
-    private int maxLog = 5; // 最大记忆层数
+    private int maxLog = 5; // 最大上下文层数
 
     private String server; // 代理服务器，默认为openai官方
 
@@ -58,7 +58,7 @@ public class Gmp {
         this.org = org;
     }
 
-    public String originChat(List<GptMessage> messages, int maxTokens, boolean stream) {
+    public String originChat(List<ChatMessage> messages, int maxTokens, boolean stream) {
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
                 .key(key)
                 .maxTokens(maxTokens);
@@ -68,8 +68,8 @@ public class Gmp {
         if (StringUtils.isNotBlank(org)) {
             request.organization(org);
         }
-        for (GptMessage msg : messages) {
-            request.addMessage(msg.getRole(), msg.getPrompt());
+        for (ChatMessage msg : messages) {
+            request.addMessage(msg.getRole(), msg.getContent());
         }
         String result = "";
         try {
@@ -84,7 +84,7 @@ public class Gmp {
         return result.trim();
     }
 
-    public String originChat(List<GptMessage> messages) {
+    public String originChat(List<ChatMessage> messages) {
         return originChat(messages, 500, false);
     }
 
@@ -162,7 +162,7 @@ public class Gmp {
             Pattern regex = Pattern.compile(pattern);
             Matcher matcher = regex.matcher(result);
             while (matcher.find()) {
-                sb.append(matcher.group(0).replace("\\n", "\n").replace("\\r","\r"));
+                sb.append(matcher.group(0).replace("\\n", "\n").replace("\\r", "\r"));
             }
 
             // 转jsonArray提取
@@ -308,14 +308,14 @@ public class Gmp {
                 .peek(de -> de.setEmbeddingWithQuery(Distance.cosineDistance(questionEmbedding, de.getContextEmbedding())))
                 .sorted(Comparator.comparing(DataEmbedding::getEmbeddingWithQuery).reversed())
                 .collect(Collectors.toList());
-        List<GptMessage> messages = new ArrayList<>();
-        messages.add(GptMessage.systemMessage("根据下面的参考回答问题，请直接回答问题，如果无法回答问题，回答“我不知道”。"));
+        List<ChatMessage> messages = new ArrayList<>();
+        messages.add(ChatMessage.systemMessage("根据下面的参考回答问题，请直接回答问题，如果无法回答问题，回答“我不知道”。"));
         StringBuilder prompt = new StringBuilder("参考:\n");
         for (int i = 0; i < Math.min(vectorNum, sorted.size()); i++) {
             prompt.append(sorted.get(i).getContext());
         }
         prompt.append("\n问题:\n").append(question);
-        messages.add(GptMessage.userMessage(prompt.toString()));
+        messages.add(ChatMessage.userMessage(prompt.toString()));
         return originChat(messages);
     }
 
