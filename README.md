@@ -25,6 +25,10 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.0.5
+
+
+
 ### 1.0.4
 
 - 优化Stream模式下提取数据的方法
