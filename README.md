@@ -27,7 +27,7 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ### 1.0.5
 
-- 移除了GptMessage， 现在统一magic-plus中的 ChatMessage
+- 移除了GptMessage，现在统一使用gpt-magic中的 ChatMessage
 
 ### 1.0.4
 
