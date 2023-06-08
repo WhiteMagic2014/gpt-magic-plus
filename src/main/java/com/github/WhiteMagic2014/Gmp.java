@@ -291,6 +291,31 @@ public class Gmp {
         return request.sendForEmbeddings();
     }
 
+
+    /**
+     * 文本转向量,向量是base64格式，便于存储
+     *
+     * @param inputs
+     * @return
+     */
+    public List<String> input2VectorBase64(List<String> inputs) {
+        CreateEmbeddingsRequest request = new CreateEmbeddingsRequest()
+                .key(key)
+                .base64Embedding(true);
+        if (StringUtils.isNotBlank(server)) {
+            request.server(server);
+        }
+        if (inputs.size() == 1) {
+            request.input(inputs.get(0));
+        } else {
+            String[] ins = new String[inputs.size()];
+            inputs.toArray(ins);
+            request.inputs(ins);
+        }
+        return request.sendForEmbeddingsBase64();
+    }
+
+
     /**
      * 根据训练集 回答问题
      *

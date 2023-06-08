@@ -25,6 +25,11 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.0.6
+
+- 转换向量现在可以使用input2VectorBase64 获得base64格式的向量数据，便于存储
+- 可以使用 EmbeddingUtil 将base64格式的向量转化为 浮点数向量
+
 ### 1.0.5
 
 - 移除了GptMessage，现在统一使用gpt-magic中的 ChatMessage
