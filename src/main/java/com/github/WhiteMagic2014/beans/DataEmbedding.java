@@ -1,16 +1,22 @@
 package com.github.WhiteMagic2014.beans;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * gpt用 数据向量模型
  */
-public class DataEmbedding {
+public class DataEmbedding implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
+    // 切片的内容
     String context;
 
+    // 切片的向量集合
     List<Double> contextEmbedding;
 
+    // 用来存储问题与本切片距离 临时排序用的字段
     Double embeddingWithQuery;
 
 

@@ -25,6 +25,13 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.1.0
+
+- 新增了DataEmbedding的扩展 DataIndex , 可以支持更多种的搜索
+- 新增了IndexCreator，可以便捷的将提供的文本切片作为索引，存储至 以.gmpIndex结尾的文件中
+- 定义了IndexSearcher，定义了一些针对DataIndex结构的检索方式
+- 默认实现了DefaultIndexSearcher，读取.gmpIndex文件基于内存进行检索
+
 ### 1.0.6
 
 - 转换向量现在可以使用input2VectorBase64 获得base64格式的向量数据，便于存储
