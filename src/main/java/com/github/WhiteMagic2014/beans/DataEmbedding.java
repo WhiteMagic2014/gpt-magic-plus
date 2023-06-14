@@ -16,6 +16,12 @@ public class DataEmbedding implements Serializable {
     // 切片的向量集合
     List<Double> contextEmbedding;
 
+    // 切片的向量集合 base64数据格式
+    String contextEmbeddingB64;
+
+    // 是否使用base64格式
+    Boolean base64Embedding = false;
+
     // 用来存储问题与本切片距离 临时排序用的字段
     Double embeddingWithQuery;
 
@@ -44,12 +50,32 @@ public class DataEmbedding implements Serializable {
         this.embeddingWithQuery = embeddingWithQuery;
     }
 
+
+    public String getContextEmbeddingB64() {
+        return contextEmbeddingB64;
+    }
+
+    public void setContextEmbeddingB64(String contextEmbeddingB64) {
+        this.contextEmbeddingB64 = contextEmbeddingB64;
+    }
+
+    public Boolean getBase64Embedding() {
+        return base64Embedding;
+    }
+
+    public void setBase64Embedding(Boolean base64Embedding) {
+        this.base64Embedding = base64Embedding;
+    }
+
     @Override
     public String toString() {
         return "DataEmbedding{" +
                 "context='" + context + '\'' +
                 ", contextEmbedding=" + contextEmbedding +
+                ", contextEmbeddingB64='" + contextEmbeddingB64 + '\'' +
+                ", base64Embedding=" + base64Embedding +
                 ", embeddingWithQuery=" + embeddingWithQuery +
                 '}';
     }
+    
 }

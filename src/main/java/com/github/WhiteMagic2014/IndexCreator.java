@@ -59,12 +59,24 @@ public class IndexCreator {
         this.autoTags = autoTags;
     }
 
+
     /**
      * @param context 文本内容
      * @param source  数据来源 比如说文本是一个文件的内容，那就可以写文件名
      * @return
      */
     public List<DataIndex> createIndex(String context, String source) {
+        return createIndex(context, source, false);
+    }
+
+
+    /**
+     * @param context 文本内容
+     * @param source  数据来源 比如说文本是一个文件的内容，那就可以写文件名
+     * @param base64  向量格式是否使用base64
+     * @return
+     */
+    public List<DataIndex> createIndex(String context, String source, Boolean base64) {
         // 检查 storage 文件夹是否存在，不存在则创建
         File storageFolder = new File(storage);
         if (!storageFolder.exists()) {
@@ -95,12 +107,19 @@ public class IndexCreator {
             JSONObject sourceJson = new JSONObject();
             sourceJson.put("source", source);
             sourceJson.put("sliceSize", sliceSize);
-            sourceJson.put("no", (i+1));
+            sourceJson.put("no", (i + 1));
             tmp.setSource(sourceJson.toJSONString());
             // embedding
             tmp.setContext(contextPiece);
-            List<Double> embedding = input2Vector(contextPiece);
-            tmp.setContextEmbedding(embedding);
+            if (base64) {
+                String embedding = input2VectorBase64(contextPiece);
+                tmp.setContextEmbeddingB64(embedding);
+                tmp.setBase64Embedding(true);
+            } else {
+                List<Double> embedding = input2Vector(contextPiece);
+                tmp.setContextEmbedding(embedding);
+                tmp.setBase64Embedding(false);
+            }
             // 自动打标记,不一定准,最好还是人为标记数据
             if (autoTags) {
                 // 因为打标记本身也不是机器必须要做的事情，所以就尝试一次，如果因为各种原因没成功就不多次尝试了
@@ -165,6 +184,39 @@ public class IndexCreator {
         do {
             try {
                 tmp = request.sendForEmbeddings();
+                flag = false;
+            } catch (Exception e) {
+                flag = true;
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        } while (flag);
+        return tmp.get(0);
+    }
+
+
+    /**
+     * 文本转向量 base64
+     *
+     * @param input
+     * @return
+     */
+    public String input2VectorBase64(String input) {
+        CreateEmbeddingsRequest request = new CreateEmbeddingsRequest()
+                .key(key)
+                .base64Embedding(true);
+        if (StringUtils.isNotBlank(server)) {
+            request.server(server);
+        }
+        request.input(input);
+        boolean flag;
+        List<String> tmp = null;
+        do {
+            try {
+                tmp = request.sendForEmbeddingsBase64();
                 flag = false;
             } catch (Exception e) {
                 flag = true;
