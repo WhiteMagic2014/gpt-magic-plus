@@ -5,7 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.github.WhiteMagic2014.beans.DataIndex;
 import com.github.WhiteMagic2014.gptApi.Chat.CreateChatCompletionRequest;
 import com.github.WhiteMagic2014.gptApi.Chat.pojo.ChatMessage;
-import com.github.WhiteMagic2014.gptApi.Embeddings.CreateEmbeddingsRequest;
+import com.github.WhiteMagic2014.util.VectorUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedWriter;
@@ -112,11 +112,11 @@ public class IndexCreator {
             // embedding
             tmp.setContext(contextPiece);
             if (base64) {
-                String embedding = input2VectorBase64(contextPiece);
+                String embedding = VectorUtil.input2VectorBase64(server, key, contextPiece);
                 tmp.setContextEmbeddingB64(embedding);
                 tmp.setBase64Embedding(true);
             } else {
-                List<Double> embedding = input2Vector(contextPiece);
+                List<Double> embedding = VectorUtil.input2Vector(server, key, contextPiece);
                 tmp.setContextEmbedding(embedding);
                 tmp.setBase64Embedding(false);
             }
@@ -163,71 +163,6 @@ public class IndexCreator {
         request.addMessage(ChatMessage.userMessage("请给以下内容1-3个相关的标签,如果有多个标签,用'&'符号隔开:\n" + context));
         String tmp = request.sendForChoices().get(0).getMessage().getContent();
         return Arrays.stream(tmp.split("&")).map(String::trim).filter(StringUtils::isNotBlank).collect(Collectors.toList());
-    }
-
-
-    /**
-     * 文本转向量
-     *
-     * @param input
-     * @return
-     */
-    private List<Double> input2Vector(String input) {
-        CreateEmbeddingsRequest request = new CreateEmbeddingsRequest()
-                .key(key);
-        if (StringUtils.isNotBlank(server)) {
-            request.server(server);
-        }
-        request.input(input);
-        boolean flag;
-        List<List<Double>> tmp = null;
-        do {
-            try {
-                tmp = request.sendForEmbeddings();
-                flag = false;
-            } catch (Exception e) {
-                flag = true;
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
-        } while (flag);
-        return tmp.get(0);
-    }
-
-
-    /**
-     * 文本转向量 base64
-     *
-     * @param input
-     * @return
-     */
-    public String input2VectorBase64(String input) {
-        CreateEmbeddingsRequest request = new CreateEmbeddingsRequest()
-                .key(key)
-                .base64Embedding(true);
-        if (StringUtils.isNotBlank(server)) {
-            request.server(server);
-        }
-        request.input(input);
-        boolean flag;
-        List<String> tmp = null;
-        do {
-            try {
-                tmp = request.sendForEmbeddingsBase64();
-                flag = false;
-            } catch (Exception e) {
-                flag = true;
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
-        } while (flag);
-        return tmp.get(0);
     }
 
 

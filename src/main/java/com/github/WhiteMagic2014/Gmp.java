@@ -7,10 +7,10 @@ import com.github.WhiteMagic2014.beans.DataEmbedding;
 import com.github.WhiteMagic2014.beans.DataIndex;
 import com.github.WhiteMagic2014.gptApi.Chat.CreateChatCompletionRequest;
 import com.github.WhiteMagic2014.gptApi.Chat.pojo.ChatMessage;
-import com.github.WhiteMagic2014.gptApi.Embeddings.CreateEmbeddingsRequest;
 import com.github.WhiteMagic2014.gptApi.Images.CreateImageRequest;
 import com.github.WhiteMagic2014.util.Distance;
 import com.github.WhiteMagic2014.util.EmbeddingUtil;
+import com.github.WhiteMagic2014.util.VectorUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -284,54 +284,6 @@ public class Gmp {
         return resultList;
     }
 
-
-    /**
-     * 文本转向量
-     *
-     * @param inputs
-     * @return
-     */
-    public List<List<Double>> input2Vector(List<String> inputs) {
-        CreateEmbeddingsRequest request = new CreateEmbeddingsRequest()
-                .key(key);
-        if (StringUtils.isNotBlank(server)) {
-            request.server(server);
-        }
-        if (inputs.size() == 1) {
-            request.input(inputs.get(0));
-        } else {
-            String[] ins = new String[inputs.size()];
-            inputs.toArray(ins);
-            request.inputs(ins);
-        }
-        return request.sendForEmbeddings();
-    }
-
-
-    /**
-     * 文本转向量,向量是base64格式，便于存储
-     *
-     * @param inputs
-     * @return
-     */
-    public List<String> input2VectorBase64(List<String> inputs) {
-        CreateEmbeddingsRequest request = new CreateEmbeddingsRequest()
-                .key(key)
-                .base64Embedding(true);
-        if (StringUtils.isNotBlank(server)) {
-            request.server(server);
-        }
-        if (inputs.size() == 1) {
-            request.input(inputs.get(0));
-        } else {
-            String[] ins = new String[inputs.size()];
-            inputs.toArray(ins);
-            request.inputs(ins);
-        }
-        return request.sendForEmbeddingsBase64();
-    }
-
-
     /**
      * 根据相似度较高的几个(vectorNum)切片数据 回答问题
      *
@@ -344,7 +296,7 @@ public class Gmp {
         if (dataEmbeddingPool.isEmpty()) {
             return "无预训练数据";
         }
-        List<Double> questionEmbedding = input2Vector(Collections.singletonList(question)).get(0);
+        List<Double> questionEmbedding = VectorUtil.input2Vector(server, key, question);
         List<DataEmbedding> sorted = dataEmbeddingPool.parallelStream()
                 .peek(de -> {
                     if (de.getBase64Embedding()) {
@@ -430,7 +382,9 @@ public class Gmp {
                 }
             } while (flag);
         }
-        addChatLog(session, question, result);
+        if (StringUtils.isNotBlank(result)) {
+            addChatLog(session, question, result);
+        }
         return result;
     }
 

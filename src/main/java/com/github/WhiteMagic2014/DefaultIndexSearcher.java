@@ -2,7 +2,11 @@ package com.github.WhiteMagic2014;
 
 
 import com.alibaba.fastjson.JSONObject;
+import com.github.WhiteMagic2014.beans.DataEmbedding;
 import com.github.WhiteMagic2014.beans.DataIndex;
+import com.github.WhiteMagic2014.util.Distance;
+import com.github.WhiteMagic2014.util.EmbeddingUtil;
+import com.github.WhiteMagic2014.util.VectorUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedReader;
@@ -16,12 +20,57 @@ import java.util.stream.Collectors;
  */
 public class DefaultIndexSearcher implements IndexSearcher {
 
+    // 代理服务器，默认为openai官方
+    private String server;
+
+    // openai key
+    private String key;
+
+
+    // 检索模式 0 = 按相似度检索
+    private int model = 0;
+
+
+    /**
+     * 根据DataIndex的content 与 question的相似度检索
+     *
+     * @return
+     */
+    public DefaultIndexSearcher contentSimilarityModel() {
+        model = 0;
+        return this;
+    }
+
+
+    // 希望获得DataIndex数量的限制 , 由于DataIndex数量可能会少，则实际情况下 n <= limit
+    private int limit = 3;
+
+    public DefaultIndexSearcher limit(int limit) {
+        this.limit = limit;
+        return this;
+    }
+
     private List<DataIndex> allIndex;
     private Map<String, List<DataIndex>> tagIndex;
     private Map<String, List<DataIndex>> sourceIndex;
     private Map<String, DataIndex> idIndex;
 
+
     public DefaultIndexSearcher(List<String> gmpIndexFilePath) {
+        init(gmpIndexFilePath, null, null);
+    }
+
+    public DefaultIndexSearcher(List<String> gmpIndexFilePath, String key) {
+        init(gmpIndexFilePath, null, key);
+    }
+
+    public DefaultIndexSearcher(List<String> gmpIndexFilePath, String server, String key) {
+        init(gmpIndexFilePath, server, key);
+    }
+
+    private void init(List<String> gmpIndexFilePath, String server, String key) {
+        this.server = server;
+        this.key = key;
         allIndex = new ArrayList<>();
         for (String path : gmpIndexFilePath) {
             try (BufferedReader br = new BufferedReader(new FileReader(path))) {
@@ -39,6 +88,7 @@ public class DefaultIndexSearcher implements IndexSearcher {
         sourceIndex = allIndex.stream().collect(Collectors.groupingBy(DataIndex::getSource));
         idIndex = allIndex.stream().collect(Collectors.toMap(DataIndex::getId, Function.identity()));
     }
+
 
     private DataIndex getIndexById(String id) {
         return idIndex.get(id);
@@ -79,9 +129,25 @@ public class DefaultIndexSearcher implements IndexSearcher {
                 .collect(Collectors.toList());
     }
 
-
     @Override
     public List<DataIndex> search(String question) {
-        return null;
+        if (model == 0) {
+            List<Double> questionEmbedding = VectorUtil.input2Vector(server, key, question);
+            // 相似度检索
+            List<DataIndex> sorted = allIndex.parallelStream()
+                    .peek(de -> {
+                        if (de.getBase64Embedding()) {
+                            de.setEmbeddingWithQuery(Distance.cosineDistance(questionEmbedding, EmbeddingUtil.embeddingB64ToDoubleList(de.getContextEmbeddingB64())));
+                        } else {
+                            de.setEmbeddingWithQuery(Distance.cosineDistance(questionEmbedding, de.getContextEmbedding()));
+                        }
+                    })
+                    .sorted(Comparator.comparing(DataEmbedding::getEmbeddingWithQuery).reversed())
+                    .limit(limit)
+                    .collect(Collectors.toList());
+            return sorted;
+        }
+        return new ArrayList<>();
     }
+
 }
