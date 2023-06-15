@@ -5,8 +5,10 @@ import com.alibaba.fastjson.JSONObject;
 import com.github.WhiteMagic2014.beans.ChatLog;
 import com.github.WhiteMagic2014.beans.DataEmbedding;
 import com.github.WhiteMagic2014.beans.DataIndex;
+import com.github.WhiteMagic2014.beans.QuestionAnswer;
 import com.github.WhiteMagic2014.gptApi.Chat.CreateChatCompletionRequest;
 import com.github.WhiteMagic2014.gptApi.Chat.pojo.ChatMessage;
+import com.github.WhiteMagic2014.gptApi.GptModel;
 import com.github.WhiteMagic2014.gptApi.Images.CreateImageRequest;
 import com.github.WhiteMagic2014.util.Distance;
 import com.github.WhiteMagic2014.util.EmbeddingUtil;
@@ -292,7 +294,7 @@ public class Gmp {
      * @param vectorNum         使用数据片段数量
      * @return
      */
-    public String answer(String question, List<DataEmbedding> dataEmbeddingPool, int vectorNum) {
+    public <T extends DataEmbedding> String answer(String question, List<T> dataEmbeddingPool, int vectorNum) {
         if (dataEmbeddingPool.isEmpty()) {
             return "无预训练数据";
         }
@@ -325,11 +327,12 @@ public class Gmp {
      * @param question 问题
      * @return
      */
-    public String answer(String session, String question) {
+    public QuestionAnswer answer(String session, String question) {
         if (indexSearcher == null) {
             throw new RuntimeException("indexSearcher 未配置");
         }
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
+//                .model(GptModel.gpt_3p5_turbo_16k)
                 .key(key)
                 .maxTokens(maxTokens);
         if (StringUtils.isNotBlank(server)) {
@@ -347,14 +350,18 @@ public class Gmp {
                 chatLog.add(ChatMessage.assistantMessage(l.getAssistant()));
             });
         }
+        QuestionAnswer answer = new QuestionAnswer();
         // 构造问答
         List<DataIndex> indices = indexSearcher.search(question);
+        answer.setRounds(indices.size());
         // 中间答案
         String result = "";
         for (int i = 0; i < indices.size(); i++) {
             DataIndex index = indices.get(i);
-            // 历史记录
-            if (!chatLog.isEmpty()) {
+            // 初始化本轮问答，如果有历史记录则填充
+            if (chatLog.isEmpty()) {
+                request.messages(new ArrayList<>());
+            } else {
                 request.messages(new ArrayList<>(chatLog));
             }
             if (i == 0) {
@@ -381,11 +388,14 @@ public class Gmp {
                     }
                 }
             } while (flag);
+            answer.addSource(index.getSource());
+            answer.addTempResult(result);
         }
         if (StringUtils.isNotBlank(result)) {
             addChatLog(session, question, result);
         }
-        return result;
+        answer.setResult(result);
+        return answer;
     }
 
 }

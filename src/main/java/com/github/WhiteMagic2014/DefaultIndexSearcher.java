@@ -66,6 +66,10 @@ public class DefaultIndexSearcher implements IndexSearcher {
     private Map<String, List<DataIndex>> sourceIndex;
     private Map<String, DataIndex> idIndex;
 
+    public List<DataIndex> getAllIndex() {
+        return allIndex;
+    }
+
     public DefaultIndexSearcher(String storagePath, String key) {
         init(storagePath, null, key);
     }
