@@ -10,6 +10,7 @@ import com.github.WhiteMagic2014.util.VectorUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.util.*;
 import java.util.function.Function;
@@ -42,6 +43,16 @@ public class DefaultIndexSearcher implements IndexSearcher {
     }
 
 
+    /**
+     * 根据DataIndex的content 与 question的相似度检索 并且联系每一个DataIndex的上下文
+     *
+     * @return
+     */
+    public DefaultIndexSearcher contentSimilarityContextModel() {
+        model = 1;
+        return this;
+    }
+
     // 希望获得DataIndex数量的限制 , 由于DataIndex数量可能会少，则实际情况下 n <= limit
     private int limit = 3;
 
@@ -55,18 +66,51 @@ public class DefaultIndexSearcher implements IndexSearcher {
     private Map<String, List<DataIndex>> sourceIndex;
     private Map<String, DataIndex> idIndex;
 
-
-    public DefaultIndexSearcher(List<String> gmpIndexFilePath) {
-        init(gmpIndexFilePath, null, null);
+    public DefaultIndexSearcher(String storagePath, String key) {
+        init(storagePath, null, key);
     }
 
+    public DefaultIndexSearcher(String storagePath, String server, String key) {
+        init(storagePath, server, key);
+    }
+
+    /**
+     * @param gmpIndexFilePath 文件路径
+     * @param key              openai key
+     */
     public DefaultIndexSearcher(List<String> gmpIndexFilePath, String key) {
         init(gmpIndexFilePath, null, key);
     }
 
+    /**
+     * @param gmpIndexFilePath 文件路径
+     * @param server           openai 代理
+     * @param key              openai key
+     */
     public DefaultIndexSearcher(List<String> gmpIndexFilePath, String server, String key) {
         init(gmpIndexFilePath, server, key);
     }
+
+    private void init(String storagePath, String server, String key) {
+        File folder = new File(storagePath);
+        if (!folder.exists() || !folder.isDirectory()) {
+            throw new RuntimeException(storagePath + " 文件夹不存在");
+        }
+        File[] listOfFiles = folder.listFiles();
+        if (listOfFiles == null || listOfFiles.length == 0) {
+            throw new RuntimeException(storagePath + " 文件夹下没有 .gmpIndex 文件");
+        }
+        List<String> gmpIndexFilePath = Arrays.stream(listOfFiles)
+                .filter(File::isFile)
+                .map(File::getAbsolutePath)
+                .filter(name -> name.endsWith(".gmpIndex"))
+                .collect(Collectors.toList());
+        if (gmpIndexFilePath.isEmpty()) {
+            throw new RuntimeException(storagePath + " 文件夹下没有 .gmpIndex 文件");
+        }
+        init(gmpIndexFilePath, server, key);
+    }
+
 
     private void init(List<String> gmpIndexFilePath, String server, String key) {
         this.server = server;
@@ -131,21 +175,44 @@ public class DefaultIndexSearcher implements IndexSearcher {
 
     @Override
     public List<DataIndex> search(String question) {
+        List<Double> questionEmbedding = VectorUtil.input2Vector(server, key, question);
+
         if (model == 0) {
-            List<Double> questionEmbedding = VectorUtil.input2Vector(server, key, question);
             // 相似度检索
-            List<DataIndex> sorted = allIndex.parallelStream()
-                    .peek(de -> {
-                        if (de.getBase64Embedding()) {
-                            de.setEmbeddingWithQuery(Distance.cosineDistance(questionEmbedding, EmbeddingUtil.embeddingB64ToDoubleList(de.getContextEmbeddingB64())));
+            return new ArrayList<>(allIndex).parallelStream()
+                    .peek(index -> {
+                        if (index.getBase64Embedding()) {
+                            index.setEmbeddingWithQuery(Distance.cosineDistance(questionEmbedding, EmbeddingUtil.embeddingB64ToDoubleList(index.getContextEmbeddingB64())));
                         } else {
-                            de.setEmbeddingWithQuery(Distance.cosineDistance(questionEmbedding, de.getContextEmbedding()));
+                            index.setEmbeddingWithQuery(Distance.cosineDistance(questionEmbedding, index.getContextEmbedding()));
                         }
                     })
                     .sorted(Comparator.comparing(DataEmbedding::getEmbeddingWithQuery).reversed())
                     .limit(limit)
                     .collect(Collectors.toList());
-            return sorted;
+        } else if (model == 1) {
+            // 首先相似度检索 然后获取每个 DataIndex上下文的关联
+            return new ArrayList<>(allIndex).parallelStream()
+                    .peek(index -> {
+                        if (index.getBase64Embedding()) {
+                            index.setEmbeddingWithQuery(Distance.cosineDistance(questionEmbedding, EmbeddingUtil.embeddingB64ToDoubleList(index.getContextEmbeddingB64())));
+                        } else {
+                            index.setEmbeddingWithQuery(Distance.cosineDistance(questionEmbedding, index.getContextEmbedding()));
+                        }
+                    })
+                    .sorted(Comparator.comparing(DataEmbedding::getEmbeddingWithQuery).reversed())
+                    .limit(limit)
+                    .map(index -> {
+                        List<DataIndex> tmp = new ArrayList<>();
+                        tmp.add(index);
+                        tmp.add(getLastIndexById(index.getId()));
+                        tmp.add(getNextIndexById(index.getId()));
+                        return tmp;
+                    })
+                    .flatMap(List::stream)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .collect(Collectors.toList());
         }
         return new ArrayList<>();
     }
