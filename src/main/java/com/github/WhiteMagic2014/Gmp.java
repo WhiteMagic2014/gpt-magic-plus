@@ -4,11 +4,13 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.github.WhiteMagic2014.beans.ChatLog;
 import com.github.WhiteMagic2014.beans.DataEmbedding;
+import com.github.WhiteMagic2014.beans.DataIndex;
 import com.github.WhiteMagic2014.gptApi.Chat.CreateChatCompletionRequest;
 import com.github.WhiteMagic2014.gptApi.Chat.pojo.ChatMessage;
 import com.github.WhiteMagic2014.gptApi.Embeddings.CreateEmbeddingsRequest;
 import com.github.WhiteMagic2014.gptApi.Images.CreateImageRequest;
 import com.github.WhiteMagic2014.util.Distance;
+import com.github.WhiteMagic2014.util.EmbeddingUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -19,16 +21,21 @@ import java.util.stream.Collectors;
 
 public class Gmp {
 
+    private IndexSearcher indexSearcher;
+
     private Map<String, Queue<ChatLog>> logs = new HashMap<>(); // 对话上下文
     private Map<String, String> personality = new HashMap<>(); //性格设定
 
     private int maxLog = 5; // 最大上下文层数
+
+    private int maxTokens = 500;// 回答问题限制的 token数量
 
     private String server; // 代理服务器，默认为openai官方
 
     private String key; // openai key
 
     private String org; // openai org
+
 
     public Gmp() {
     }
@@ -40,6 +47,10 @@ public class Gmp {
     public Gmp(String server, String key) {
         this.server = server;
         this.key = key;
+    }
+
+    public void setIndexSearcher(IndexSearcher indexSearcher) {
+        this.indexSearcher = indexSearcher;
     }
 
     public void setMaxLog(int maxLog) {
@@ -56,6 +67,11 @@ public class Gmp {
 
     public void setOrg(String org) {
         this.org = org;
+    }
+
+
+    public void setMaxTokens(int maxTokens) {
+        this.maxTokens = maxTokens;
     }
 
     public String originChat(List<ChatMessage> messages, int maxTokens, boolean stream) {
@@ -95,7 +111,7 @@ public class Gmp {
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
                 .key(key)
                 .maxTokens(maxTokens)
-                .addMessage("system", personal);
+                .addMessage(ChatMessage.systemMessage(personal));
         if (StringUtils.isNotBlank(server)) {
             request.server(server);
         }
@@ -106,11 +122,11 @@ public class Gmp {
         if (logs.containsKey(session)) {
             Queue<ChatLog> queue = logs.get(session);
             queue.forEach(l -> {
-                request.addMessage("user", l.getUser());
-                request.addMessage("assistant", l.getAssistant());
+                request.addMessage(ChatMessage.userMessage(l.getUser()));
+                request.addMessage(ChatMessage.assistantMessage(l.getAssistant()));
             });
         }
-        request.addMessage("user", prompt);
+        request.addMessage(ChatMessage.userMessage(prompt));
 
         // 发送请求
         String result = "";
@@ -317,36 +333,105 @@ public class Gmp {
 
 
     /**
-     * 根据训练集 回答问题
+     * 根据相似度较高的几个(vectorNum)切片数据 回答问题
      *
-     * @param question       问题
-     * @param dataEmbeddings 训练集
-     * @param vectorNum      使用数据片段数量
+     * @param question          问题
+     * @param dataEmbeddingPool 全量训练集, 根据问题计算相似度取前vectorNum个使用
+     * @param vectorNum         使用数据片段数量
      * @return
      */
-    public String answer(String question, List<DataEmbedding> dataEmbeddings, int vectorNum) {
-        if (dataEmbeddings.isEmpty()) {
+    public String answer(String question, List<DataEmbedding> dataEmbeddingPool, int vectorNum) {
+        if (dataEmbeddingPool.isEmpty()) {
             return "无预训练数据";
         }
         List<Double> questionEmbedding = input2Vector(Collections.singletonList(question)).get(0);
-        List<DataEmbedding> sorted = dataEmbeddings.parallelStream()
-                .peek(de -> de.setEmbeddingWithQuery(Distance.cosineDistance(questionEmbedding, de.getContextEmbedding())))
+        List<DataEmbedding> sorted = dataEmbeddingPool.parallelStream()
+                .peek(de -> {
+                    if (de.getBase64Embedding()) {
+                        de.setEmbeddingWithQuery(Distance.cosineDistance(questionEmbedding, EmbeddingUtil.embeddingB64ToDoubleList(de.getContextEmbeddingB64())));
+                    } else {
+                        de.setEmbeddingWithQuery(Distance.cosineDistance(questionEmbedding, de.getContextEmbedding()));
+                    }
+                })
                 .sorted(Comparator.comparing(DataEmbedding::getEmbeddingWithQuery).reversed())
                 .collect(Collectors.toList());
         List<ChatMessage> messages = new ArrayList<>();
-        messages.add(ChatMessage.systemMessage("根据下面的参考回答问题，请直接回答问题，如果无法回答问题，回答“我不知道”。"));
-        StringBuilder prompt = new StringBuilder("参考:\n");
+        StringBuilder prompt = new StringBuilder("下面是上下文信息\n------------\n");
         for (int i = 0; i < Math.min(vectorNum, sorted.size()); i++) {
             prompt.append(sorted.get(i).getContext());
         }
-        prompt.append("\n问题:\n").append(question);
+        prompt.append(" \n------------\n根据上下文信息而非先前知识，回答问题：").append(question);
         messages.add(ChatMessage.userMessage(prompt.toString()));
         return originChat(messages);
     }
 
-    public String answer(String question, List<DataEmbedding> dataEmbeddings) {
-        return answer(question, dataEmbeddings, 3);
-    }
 
+    /**
+     * 根据预训练数据回答问题,依赖 indexSearcher
+     *
+     * @param session  session id 可以保证上下文连贯
+     * @param question 问题
+     * @return
+     */
+    public String answer(String session, String question) {
+        if (indexSearcher == null) {
+            throw new RuntimeException("indexSearcher 未配置");
+        }
+        CreateChatCompletionRequest request = new CreateChatCompletionRequest()
+                .key(key)
+                .maxTokens(maxTokens);
+        if (StringUtils.isNotBlank(server)) {
+            request.server(server);
+        }
+        if (StringUtils.isNotBlank(org)) {
+            request.organization(org);
+        }
+        // 历史对话记录 预处理存档
+        List<ChatMessage> chatLog = new ArrayList<>();
+        if (logs.containsKey(session)) {
+            Queue<ChatLog> queue = logs.get(session);
+            queue.forEach(l -> {
+                chatLog.add(ChatMessage.userMessage(l.getUser()));
+                chatLog.add(ChatMessage.assistantMessage(l.getAssistant()));
+            });
+        }
+        // 构造问答
+        List<DataIndex> indices = indexSearcher.search(question);
+        // 中间答案
+        String result = "";
+        for (int i = 0; i < indices.size(); i++) {
+            DataIndex index = indices.get(i);
+            // 历史记录
+            if (!chatLog.isEmpty()) {
+                request.messages(new ArrayList<>(chatLog));
+            }
+            if (i == 0) {
+                String promptTemplate = "上下文信息如下\n----------------\n{context}\n----------------\n给定上下文信息而非先验知识，回答以下问题：\n{question}\n";
+                request.addMessage(ChatMessage.userMessage(promptTemplate.replace("{context}", index.getContext()).replace("{question}", question)));
+            } else {
+                String promptTemplate = "我们有机会（仅在必要时）通过下面的更多上下文来完善上述答案。\n----------------\n{context}\n----------------\n在新的背景下，完善原始答案以更好地回答问题。如果上下文没有用处，请再次输出原始答案。";
+                request.addMessage(ChatMessage.userMessage(question));
+                request.addMessage(ChatMessage.assistantMessage(result));
+                request.addMessage(ChatMessage.userMessage(promptTemplate.replace("{context}", index.getContext())));
+            }
+            // 获得答案
+            boolean flag;
+            do {
+                try {
+                    result = request.sendForChoices().get(0).getMessage().getContent();
+                    flag = false;
+                } catch (Exception e) {
+                    flag = true;
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+            } while (flag);
+        }
+        addChatLog(session, question, result);
+        return result;
+    }
 
 }

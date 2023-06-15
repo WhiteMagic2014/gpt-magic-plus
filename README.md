@@ -29,8 +29,9 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 - 新增了DataEmbedding的扩展 DataIndex , 可以支持更多种的搜索
 - 新增了IndexCreator，可以便捷的将提供的文本切片作为索引，存储至 以.gmpIndex结尾的文件中
-- 定义了IndexSearcher，定义了一些针对DataIndex结构的检索方式
+- 定义了IndexSearcher接口,用来根据问题检索相关 DataIndex
 - 默认实现了DefaultIndexSearcher，读取.gmpIndex文件基于内存进行检索
+- Gmp提供了新的基于IndexSearcher的问答方法
 
 ### 1.0.6
 

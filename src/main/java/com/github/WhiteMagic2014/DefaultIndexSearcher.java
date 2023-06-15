@@ -40,13 +40,11 @@ public class DefaultIndexSearcher implements IndexSearcher {
         idIndex = allIndex.stream().collect(Collectors.toMap(DataIndex::getId, Function.identity()));
     }
 
-    @Override
-    public DataIndex getIndexById(String id) {
+    private DataIndex getIndexById(String id) {
         return idIndex.get(id);
     }
 
-    @Override
-    public DataIndex getNextIndexById(String id) {
+    private DataIndex getNextIndexById(String id) {
         DataIndex tmp = idIndex.get(id);
         if (StringUtils.isNotBlank(tmp.getAfterId())) {
             return idIndex.get(tmp.getAfterId());
@@ -54,8 +52,7 @@ public class DefaultIndexSearcher implements IndexSearcher {
         return null;
     }
 
-    @Override
-    public DataIndex getLastIndexById(String id) {
+    private DataIndex getLastIndexById(String id) {
         DataIndex tmp = idIndex.get(id);
         if (StringUtils.isNotBlank(tmp.getBeforeId())) {
             return idIndex.get(tmp.getBeforeId());
@@ -63,8 +60,7 @@ public class DefaultIndexSearcher implements IndexSearcher {
         return null;
     }
 
-    @Override
-    public List<DataIndex> getIndexByTag(Set<String> includeTag, Set<String> excludeTag) {
+    private List<DataIndex> getIndexByTag(Set<String> includeTag, Set<String> excludeTag) {
         return allIndex.stream()
                 .filter(index -> new HashSet<>(index.getTags()).containsAll(includeTag))
                 .filter(index -> excludeTag.stream().noneMatch(index.getTags()::contains))
@@ -72,17 +68,20 @@ public class DefaultIndexSearcher implements IndexSearcher {
     }
 
 
-    @Override
-    public List<DataIndex> getIndexByTag(String tag) {
+    private List<DataIndex> getIndexByTag(String tag) {
         return tagIndex.get(tag);
     }
 
-    @Override
-    public List<DataIndex> getIndexBySource(String source) {
+    private List<DataIndex> getIndexBySource(String source) {
         return sourceIndex.entrySet().stream()
                 .filter(entry -> entry.getKey().contains(source))
                 .flatMap(entry -> entry.getValue().stream())
                 .collect(Collectors.toList());
     }
 
+
+    @Override
+    public List<DataIndex> search(String question) {
+        return null;
+    }
 }
