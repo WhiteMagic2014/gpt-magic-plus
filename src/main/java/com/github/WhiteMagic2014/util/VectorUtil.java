@@ -1,7 +1,6 @@
 package com.github.WhiteMagic2014.util;
 
 import com.github.WhiteMagic2014.gptApi.Embeddings.CreateEmbeddingsRequest;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 
@@ -13,12 +12,8 @@ public class VectorUtil {
      * @param input
      * @return
      */
-    public static List<Double> input2Vector(String server, String key, String input) {
-        CreateEmbeddingsRequest request = new CreateEmbeddingsRequest()
-                .key(key);
-        if (StringUtils.isNotBlank(server)) {
-            request.server(server);
-        }
+    public static List<Double> input2Vector(String input) {
+        CreateEmbeddingsRequest request = new CreateEmbeddingsRequest();
         request.input(input);
         boolean flag;
         List<List<Double>> tmp = null;
@@ -45,13 +40,9 @@ public class VectorUtil {
      * @param input
      * @return
      */
-    public static String input2VectorBase64(String server, String key, String input) {
+    public static String input2VectorBase64(String input) {
         CreateEmbeddingsRequest request = new CreateEmbeddingsRequest()
-                .key(key)
                 .base64Embedding(true);
-        if (StringUtils.isNotBlank(server)) {
-            request.server(server);
-        }
         request.input(input);
         boolean flag;
         List<String> tmp = null;
@@ -78,12 +69,8 @@ public class VectorUtil {
      * @param inputs
      * @return
      */
-    public static List<List<Double>> input2Vector(String server, String key, List<String> inputs) {
-        CreateEmbeddingsRequest request = new CreateEmbeddingsRequest()
-                .key(key);
-        if (StringUtils.isNotBlank(server)) {
-            request.server(server);
-        }
+    public static List<List<Double>> input2Vector(List<String> inputs) {
+        CreateEmbeddingsRequest request = new CreateEmbeddingsRequest();
         if (inputs.size() == 1) {
             request.input(inputs.get(0));
         } else {
@@ -101,13 +88,9 @@ public class VectorUtil {
      * @param inputs
      * @return
      */
-    public static List<String> input2VectorBase64(String server, String key, List<String> inputs) {
+    public static List<String> input2VectorBase64(List<String> inputs) {
         CreateEmbeddingsRequest request = new CreateEmbeddingsRequest()
-                .key(key)
                 .base64Embedding(true);
-        if (StringUtils.isNotBlank(server)) {
-            request.server(server);
-        }
         if (inputs.size() == 1) {
             request.input(inputs.get(0));
         } else {

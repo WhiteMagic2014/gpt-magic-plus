@@ -8,7 +8,6 @@ import com.github.WhiteMagic2014.beans.DataIndex;
 import com.github.WhiteMagic2014.beans.QuestionAnswer;
 import com.github.WhiteMagic2014.gptApi.Chat.CreateChatCompletionRequest;
 import com.github.WhiteMagic2014.gptApi.Chat.pojo.ChatMessage;
-import com.github.WhiteMagic2014.gptApi.GptModel;
 import com.github.WhiteMagic2014.gptApi.Images.CreateImageRequest;
 import com.github.WhiteMagic2014.util.Distance;
 import com.github.WhiteMagic2014.util.EmbeddingUtil;
@@ -32,43 +31,16 @@ public class Gmp {
 
     private int maxTokens = 500;// 回答问题限制的 token数量
 
-    private String server; // 代理服务器，默认为openai官方
-
-    private String key; // openai key
-
-    private String org; // openai org
-
 
     public Gmp() {
     }
 
-    public Gmp(String key) {
-        this.key = key;
-    }
-
-    public Gmp(String server, String key) {
-        this.server = server;
-        this.key = key;
-    }
-
-    public void setIndexSearcher(IndexSearcher indexSearcher) {
+    public Gmp(IndexSearcher indexSearcher) {
         this.indexSearcher = indexSearcher;
     }
 
     public void setMaxLog(int maxLog) {
         this.maxLog = maxLog;
-    }
-
-    public void setServer(String server) {
-        this.server = server;
-    }
-
-    public void setKey(String key) {
-        this.key = key;
-    }
-
-    public void setOrg(String org) {
-        this.org = org;
     }
 
 
@@ -78,14 +50,7 @@ public class Gmp {
 
     public String originChat(List<ChatMessage> messages, int maxTokens, boolean stream) {
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
-                .key(key)
                 .maxTokens(maxTokens);
-        if (StringUtils.isNotBlank(server)) {
-            request.server(server);
-        }
-        if (StringUtils.isNotBlank(org)) {
-            request.organization(org);
-        }
         for (ChatMessage msg : messages) {
             request.addMessage(msg.getRole(), msg.getContent());
         }
@@ -111,15 +76,8 @@ public class Gmp {
         String personal = personality.getOrDefault(session, "与用户进行闲聊或娱乐性的对话，以改善用户体验。");
         // 构造初始请求
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
-                .key(key)
                 .maxTokens(maxTokens)
                 .addMessage(ChatMessage.systemMessage(personal));
-        if (StringUtils.isNotBlank(server)) {
-            request.server(server);
-        }
-        if (StringUtils.isNotBlank(org)) {
-            request.organization(org);
-        }
         // 拼接历史对话记录
         if (logs.containsKey(session)) {
             Queue<ChatLog> queue = logs.get(session);
@@ -261,16 +219,9 @@ public class Gmp {
      */
     public List<String> image(String prompt, int n) {
         CreateImageRequest request = new CreateImageRequest()
-                .key(key)
                 .prompt(prompt)
                 .n(n)
                 .largeSize();
-        if (StringUtils.isNotBlank(server)) {
-            request.server(server);
-        }
-        if (StringUtils.isNotBlank(org)) {
-            request.organization(org);
-        }
         JSONObject temp = null;
         try {
             temp = request.send();
@@ -298,7 +249,7 @@ public class Gmp {
         if (dataEmbeddingPool.isEmpty()) {
             return "无预训练数据";
         }
-        List<Double> questionEmbedding = VectorUtil.input2Vector(server, key, question);
+        List<Double> questionEmbedding = VectorUtil.input2Vector(question);
         List<DataEmbedding> sorted = dataEmbeddingPool.parallelStream()
                 .peek(de -> {
                     if (de.getBase64Embedding()) {
@@ -333,14 +284,7 @@ public class Gmp {
         }
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
 //                .model(GptModel.gpt_3p5_turbo_16k)
-                .key(key)
                 .maxTokens(maxTokens);
-        if (StringUtils.isNotBlank(server)) {
-            request.server(server);
-        }
-        if (StringUtils.isNotBlank(org)) {
-            request.organization(org);
-        }
         // 历史对话记录 预处理存档
         List<ChatMessage> chatLog = new ArrayList<>();
         if (logs.containsKey(session)) {

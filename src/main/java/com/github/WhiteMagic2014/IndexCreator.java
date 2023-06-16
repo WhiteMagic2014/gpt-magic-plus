@@ -20,24 +20,13 @@ import java.util.stream.Collectors;
 
 public class IndexCreator {
 
-    private String server; // 代理服务器，默认为openai官方
-
-    private String key; // openai key
-
     private String storage;// 生成index的存储地址
 
     private int sliceSize = 512;//数据切片大小
 
     private boolean autoTags = false;//是否自动给切片生成标签
 
-    public IndexCreator(String key, String storage) {
-        this.key = key;
-        this.storage = storage;
-    }
-
-    public IndexCreator(String server, String key, String storage) {
-        this.server = server;
-        this.key = key;
+    public IndexCreator(String storage) {
         this.storage = storage;
     }
 
@@ -112,11 +101,11 @@ public class IndexCreator {
             // embedding
             tmp.setContext(contextPiece);
             if (base64) {
-                String embedding = VectorUtil.input2VectorBase64(server, key, contextPiece);
+                String embedding = VectorUtil.input2VectorBase64(contextPiece);
                 tmp.setContextEmbeddingB64(embedding);
                 tmp.setBase64Embedding(true);
             } else {
-                List<Double> embedding = VectorUtil.input2Vector(server, key, contextPiece);
+                List<Double> embedding = VectorUtil.input2Vector(contextPiece);
                 tmp.setContextEmbedding(embedding);
                 tmp.setBase64Embedding(false);
             }
@@ -153,12 +142,8 @@ public class IndexCreator {
      */
     private List<String> tagContext(String context) {
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
-                .key(key)
                 .maxTokens(128)
                 .temperature(0.0f);
-        if (StringUtils.isNotBlank(server)) {
-            request.server(server);
-        }
         request.addMessage(ChatMessage.systemMessage("是你一个数据标记员，负责给数据做标记"));
         request.addMessage(ChatMessage.userMessage("请给以下内容1-3个相关的标签,如果有多个标签,用'&'符号隔开:\n" + context));
         String tmp = request.sendForChoices().get(0).getMessage().getContent();

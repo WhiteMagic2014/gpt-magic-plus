@@ -25,6 +25,18 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.1.1
+
+- gpt-magic 升级到1.6.1 具体的更新细节详见[更新说明](https://github.com/WhiteMagic2014/gpt-magic)
+- gpt-magic 从1.6.1版本起，支持使用System.setProperty 配置一些属性，所以本项目中的 Gmp, DefaultIndexSearcher,
+  IndexCreator, VectorUtil 等在实例化或使用时不再需要显式的指定key，代理server等属性了
+
+```
+现在可以这样在运行时提前设置属性
+System.setProperty("OPENAI_API_KEY","");
+System.setProperty("OPENAI_API_SERVER","");
+```
+
 ### 1.1.0
 
 - 新增了DataEmbedding的扩展 DataIndex , 可以支持更多种的搜索

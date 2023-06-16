@@ -21,16 +21,8 @@ import java.util.stream.Collectors;
  */
 public class DefaultIndexSearcher implements IndexSearcher {
 
-    // 代理服务器，默认为openai官方
-    private String server;
-
-    // openai key
-    private String key;
-
-
     // 检索模式 0 = 按相似度检索
     private int model = 0;
-
 
     /**
      * 根据DataIndex的content 与 question的相似度检索
@@ -41,7 +33,6 @@ public class DefaultIndexSearcher implements IndexSearcher {
         model = 0;
         return this;
     }
-
 
     /**
      * 根据DataIndex的content 与 question的相似度检索 并且联系每一个DataIndex的上下文
@@ -70,32 +61,17 @@ public class DefaultIndexSearcher implements IndexSearcher {
         return allIndex;
     }
 
-    public DefaultIndexSearcher(String storagePath, String key) {
-        init(storagePath, null, key);
+    public DefaultIndexSearcher(String storagePath) {
+        init(storagePath);
     }
 
-    public DefaultIndexSearcher(String storagePath, String server, String key) {
-        init(storagePath, server, key);
+
+    public DefaultIndexSearcher(List<String> gmpIndexFilePath) {
+        init(gmpIndexFilePath);
     }
 
-    /**
-     * @param gmpIndexFilePath 文件路径
-     * @param key              openai key
-     */
-    public DefaultIndexSearcher(List<String> gmpIndexFilePath, String key) {
-        init(gmpIndexFilePath, null, key);
-    }
 
-    /**
-     * @param gmpIndexFilePath 文件路径
-     * @param server           openai 代理
-     * @param key              openai key
-     */
-    public DefaultIndexSearcher(List<String> gmpIndexFilePath, String server, String key) {
-        init(gmpIndexFilePath, server, key);
-    }
-
-    private void init(String storagePath, String server, String key) {
+    private void init(String storagePath) {
         File folder = new File(storagePath);
         if (!folder.exists() || !folder.isDirectory()) {
             throw new RuntimeException(storagePath + " 文件夹不存在");
@@ -112,13 +88,11 @@ public class DefaultIndexSearcher implements IndexSearcher {
         if (gmpIndexFilePath.isEmpty()) {
             throw new RuntimeException(storagePath + " 文件夹下没有 .gmpIndex 文件");
         }
-        init(gmpIndexFilePath, server, key);
+        init(gmpIndexFilePath);
     }
 
 
-    private void init(List<String> gmpIndexFilePath, String server, String key) {
-        this.server = server;
-        this.key = key;
+    private void init(List<String> gmpIndexFilePath) {
         allIndex = new ArrayList<>();
         for (String path : gmpIndexFilePath) {
             try (BufferedReader br = new BufferedReader(new FileReader(path))) {
@@ -179,8 +153,7 @@ public class DefaultIndexSearcher implements IndexSearcher {
 
     @Override
     public List<DataIndex> search(String question) {
-        List<Double> questionEmbedding = VectorUtil.input2Vector(server, key, question);
-
+        List<Double> questionEmbedding = VectorUtil.input2Vector(question);
         if (model == 0) {
             // 相似度检索
             return new ArrayList<>(allIndex).parallelStream()
