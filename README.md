@@ -25,6 +25,19 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.1.2
+
+- Gmp answer 返回的 QuestionAnswer 中 现在包含context文本
+- Gmp 现在支持set一个model运用在 chat接口中
+
+```
+Gmp gmp = new Gmp();
+gmp.setModel(GptModel.gpt_3p5_turbo); // GptModel.gpt_3p5_turbo_16k
+```
+
+- IndexCreator 新增 createIndexPdf 方法，可以根据提供的pdf创建索引
+- DefaultIndexSearcher 优化了根据source创建map的逻辑
+
 ### 1.1.1
 
 - gpt-magic 升级到1.6.1 具体的更新细节详见[更新说明](https://github.com/WhiteMagic2014/gpt-magic)

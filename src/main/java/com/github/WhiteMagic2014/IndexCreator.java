@@ -7,6 +7,8 @@ import com.github.WhiteMagic2014.gptApi.Chat.CreateChatCompletionRequest;
 import com.github.WhiteMagic2014.gptApi.Chat.pojo.ChatMessage;
 import com.github.WhiteMagic2014.util.VectorUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -66,18 +68,7 @@ public class IndexCreator {
      * @return
      */
     public List<DataIndex> createIndex(String context, String source, Boolean base64) {
-        // 检查 storage 文件夹是否存在，不存在则创建
-        File storageFolder = new File(storage);
-        if (!storageFolder.exists()) {
-            storageFolder.mkdirs();
-        }
-        // 将 storage+source+".gmpIndex" 作为文件名 fileName
-        String fileName = storage + File.separator + source + ".gmpIndex";
-        // 如果 storage 文件夹存在 并且其中已经存在了与fileName同名的文件， 把文件名改成  storage+source+".new.gmpIndex"
-        File indexFile = new File(fileName);
-        if (indexFile.exists()) {
-            fileName = storage + File.separator + source + ".new.gmpIndex";
-        }
+        String fileName = createFile(source);
         List<DataIndex> dataIndices = new ArrayList<>();
         String uuid = UUID.randomUUID().toString();
         List<String> contextPieces = sliceContext(context, sliceSize);
@@ -120,7 +111,117 @@ public class IndexCreator {
             }
             dataIndices.add(tmp);
         }
-        // 将 List<DataIndex> 转换为json 存储至文件
+        saveFile(fileName, dataIndices);
+        return dataIndices;
+    }
+
+
+    /**
+     * @param pdfFilePath pdf文件地址
+     * @return
+     */
+    public List<DataIndex> createIndexPdf(String pdfFilePath) {
+        return createIndexPdf(pdfFilePath, false);
+    }
+
+    /**
+     * @param pdfFilePath pdf文件地址
+     * @param base64      向量格式是否使用base64
+     * @return
+     */
+    public List<DataIndex> createIndexPdf(String pdfFilePath, Boolean base64) {
+        try {
+            File pdfFile = new File(pdfFilePath);
+            PDDocument document = PDDocument.load(pdfFile);
+            List<DataIndex> dataIndices = new ArrayList<>();
+            String fileName = createFile(pdfFile.getName());
+            String uuid = UUID.randomUUID().toString();
+            int no = 1;
+            PDFTextStripper stripper = new PDFTextStripper();
+            for (int i = 1; i <= document.getNumberOfPages(); i++) {
+                stripper.setStartPage(i);
+                stripper.setEndPage(i);
+                List<String> contextPieces = sliceContext(stripper.getText(document).replace(" ", ""), sliceSize);
+                for (String contextPiece : contextPieces) {
+                    DataIndex tmp = new DataIndex();
+                    tmp.setId(uuid + "_" + no);
+                    // node
+                    tmp.setBeforeId(uuid + "_" + (no - 1));
+                    tmp.setAfterId(uuid + "_" + (no + 1));
+                    // source
+                    JSONObject sourceJson = new JSONObject();
+                    sourceJson.put("source", pdfFile.getName());
+                    sourceJson.put("sliceSize", sliceSize);
+                    sourceJson.put("no", no);
+                    sourceJson.put("page", i);
+                    tmp.setSource(sourceJson.toJSONString());
+                    // embedding
+                    tmp.setContext(contextPiece);
+                    if (base64) {
+                        String embedding = VectorUtil.input2VectorBase64(contextPiece);
+                        tmp.setContextEmbeddingB64(embedding);
+                        tmp.setBase64Embedding(true);
+                    } else {
+                        List<Double> embedding = VectorUtil.input2Vector(contextPiece);
+                        tmp.setContextEmbedding(embedding);
+                        tmp.setBase64Embedding(false);
+                    }
+                    // 自动打标记,不一定准,最好还是人为标记数据
+                    if (autoTags) {
+                        // 因为打标记本身也不是机器必须要做的事情，所以就尝试一次，如果因为各种原因没成功就不多次尝试了
+                        try {
+                            tmp.setTags(tagContext(contextPiece));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    dataIndices.add(tmp);
+                    no++;
+                }
+            }
+            document.close();
+            // 去除头尾节点的 上下节点
+            dataIndices.get(0).setBeforeId(null);
+            dataIndices.get(dataIndices.size() - 1).setAfterId(null);
+            // 保存数据为文件
+            saveFile(fileName, dataIndices);
+            return dataIndices;
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+
+    /**
+     * 根据source 创建 文件
+     *
+     * @param source
+     * @return
+     */
+    private String createFile(String source) {
+        // 检查 storage 文件夹是否存在，不存在则创建
+        File storageFolder = new File(storage);
+        if (!storageFolder.exists()) {
+            storageFolder.mkdirs();
+        }
+        // 将 storage+source+".gmpIndex" 作为文件名 fileName
+        String fileName = storage + File.separator + source + ".gmpIndex";
+        // 如果 storage 文件夹存在 并且其中已经存在了与fileName同名的文件， 把文件名改成  storage+source+".new.gmpIndex"
+        File indexFile = new File(fileName);
+        if (indexFile.exists()) {
+            fileName = storage + File.separator + source + ".new.gmpIndex";
+        }
+        return fileName;
+    }
+
+
+    /**
+     * 将 List<DataIndex> 转换为json 存储至文件
+     *
+     * @param fileName
+     * @param dataIndices
+     */
+    private void saveFile(String fileName, List<DataIndex> dataIndices) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName))) {
             for (DataIndex di : dataIndices) {
                 String json = JSON.toJSONString(di);
@@ -130,9 +231,7 @@ public class IndexCreator {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return dataIndices;
     }
-
 
     /**
      * 文本打标签

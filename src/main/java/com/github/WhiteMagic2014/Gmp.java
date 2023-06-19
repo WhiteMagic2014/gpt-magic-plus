@@ -31,6 +31,8 @@ public class Gmp {
 
     private int maxTokens = 500;// 回答问题限制的 token数量
 
+    private String model;
+
 
     public Gmp() {
     }
@@ -43,6 +45,9 @@ public class Gmp {
         this.maxLog = maxLog;
     }
 
+    public void setModel(String model) {
+        this.model = model;
+    }
 
     public void setMaxTokens(int maxTokens) {
         this.maxTokens = maxTokens;
@@ -51,6 +56,9 @@ public class Gmp {
     public String originChat(List<ChatMessage> messages, int maxTokens, boolean stream) {
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
                 .maxTokens(maxTokens);
+        if (StringUtils.isNotBlank(model)) {
+            request.model(model);
+        }
         for (ChatMessage msg : messages) {
             request.addMessage(msg.getRole(), msg.getContent());
         }
@@ -78,6 +86,9 @@ public class Gmp {
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
                 .maxTokens(maxTokens)
                 .addMessage(ChatMessage.systemMessage(personal));
+        if (StringUtils.isNotBlank(model)) {
+            request.model(model);
+        }
         // 拼接历史对话记录
         if (logs.containsKey(session)) {
             Queue<ChatLog> queue = logs.get(session);
@@ -87,7 +98,6 @@ public class Gmp {
             });
         }
         request.addMessage(ChatMessage.userMessage(prompt));
-
         // 发送请求
         String result = "";
         try {
@@ -283,8 +293,10 @@ public class Gmp {
             throw new RuntimeException("indexSearcher 未配置");
         }
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
-//                .model(GptModel.gpt_3p5_turbo_16k)
                 .maxTokens(maxTokens);
+        if (StringUtils.isNotBlank(model)) {
+            request.model(model);
+        }
         // 历史对话记录 预处理存档
         List<ChatMessage> chatLog = new ArrayList<>();
         if (logs.containsKey(session)) {
@@ -332,7 +344,9 @@ public class Gmp {
                     }
                 }
             } while (flag);
-            answer.addSource(index.getSource());
+            JSONObject source = JSONObject.parseObject(index.getSource());
+            source.put("content", index.getContext());
+            answer.addSource(source.toJSONString());
             answer.addTempResult(result);
         }
         if (StringUtils.isNotBlank(result)) {
