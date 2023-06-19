@@ -105,6 +105,7 @@ public class DefaultIndexSearcher implements IndexSearcher {
             }
         }
         tagIndex = allIndex.stream()
+                .filter(dataIndex -> dataIndex.getTags() != null && !dataIndex.getTags().isEmpty())
                 .flatMap(dataIndex -> dataIndex.getTags().stream().map(tag -> new AbstractMap.SimpleEntry<>(tag, dataIndex)))
                 .collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
         sourceIndex = allIndex.stream().collect(Collectors.groupingBy(index -> JSONObject.parseObject(index.getSource()).getString("source")));
