@@ -76,7 +76,7 @@ public class Gmp {
     }
 
     public String originChat(List<ChatMessage> messages) {
-        return originChat(messages, 500, false);
+        return originChat(messages, maxTokens, false);
     }
 
 
@@ -130,7 +130,7 @@ public class Gmp {
 
 
     public String chat(String session, String prompt) {
-        return chat(session, prompt, 500, false);
+        return chat(session, prompt, maxTokens, false);
     }
 
 
@@ -278,7 +278,7 @@ public class Gmp {
         }
         prompt.append(" \n------------\n根据上下文信息而非先前知识，回答问题：").append(question);
         messages.add(ChatMessage.userMessage(prompt.toString()));
-        return originChat(messages, 500, stream);
+        return originChat(messages, maxTokens, stream);
     }
 
 

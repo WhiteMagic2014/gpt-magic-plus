@@ -25,6 +25,11 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.1.5
+
+- 修复 Gmp 中 maxTokens 参数在部分方法中没有正确生效的bug
+
+
 ### 1.1.4
 
 - Gmp answer 现在支持stream模式
