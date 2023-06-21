@@ -253,9 +253,10 @@ public class Gmp {
      * @param question          问题
      * @param dataEmbeddingPool 全量训练集, 根据问题计算相似度取前vectorNum个使用
      * @param vectorNum         使用数据片段数量
+     * @param stream            是否使用流返回
      * @return
      */
-    public <T extends DataEmbedding> String answer(String question, List<T> dataEmbeddingPool, int vectorNum) {
+    public <T extends DataEmbedding> String answer(String question, List<T> dataEmbeddingPool, int vectorNum, boolean stream) {
         if (dataEmbeddingPool.isEmpty()) {
             return "无预训练数据";
         }
@@ -277,7 +278,7 @@ public class Gmp {
         }
         prompt.append(" \n------------\n根据上下文信息而非先前知识，回答问题：").append(question);
         messages.add(ChatMessage.userMessage(prompt.toString()));
-        return originChat(messages);
+        return originChat(messages, 500, stream);
     }
 
 
@@ -289,6 +290,18 @@ public class Gmp {
      * @return
      */
     public QuestionAnswer answer(String session, String question) {
+        return answer(session, question, false);
+    }
+
+    /**
+     * 根据预训练数据回答问题,依赖 indexSearcher
+     *
+     * @param session  session id 可以保证上下文连贯
+     * @param question 问题
+     * @param stream   stream模式，降低超时的可能
+     * @return
+     */
+    public QuestionAnswer answer(String session, String question, Boolean stream) {
         if (indexSearcher == null) {
             throw new RuntimeException("indexSearcher 未配置");
         }
@@ -333,7 +346,11 @@ public class Gmp {
             boolean flag;
             do {
                 try {
-                    result = request.sendForChoices().get(0).getMessage().getContent();
+                    if (stream) {
+                        result = streamRequest(request);
+                    } else {
+                        result = request.sendForChoices().get(0).getMessage().getContent();
+                    }
                     flag = false;
                 } catch (Exception e) {
                     flag = true;

@@ -25,6 +25,10 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.1.4
+
+- Gmp answer 现在支持stream模式
+
 ### 1.1.3
 
 - 修复 DefaultIndexSearcher 在数据缺少tags时，初始化错误的bug
