@@ -1,6 +1,9 @@
 package com.github.WhiteMagic2014.beans;
 
-public class ChatLog {
+import java.io.Serializable;
+
+public class ChatLog implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private String user;
     private String assistant;

@@ -25,6 +25,12 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.1.7
+
+- 修复 Gmp 中 answer,无法正确遗忘记忆的bug
+- 新增 ContextMemory 抽象类，负责记录Gmp中上下文记忆相关处理，默认提供了DefaultContextMemory 基于内存实现
+- 现在 stream 模式 不需要在调用相关chat方法时指定，而是在初始化设置Gmp时全局指定
+
 ### 1.1.6
 
 - 优化 Gmp 中 answer,现在记忆长度过长也会和chat一样自动遗忘记忆
