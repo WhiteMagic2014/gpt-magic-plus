@@ -62,16 +62,14 @@ public class DefaultIndexSearcher implements IndexSearcher {
     }
 
     public DefaultIndexSearcher(String storagePath) {
-        init(storagePath);
+        load(storagePath);
     }
-
 
     public DefaultIndexSearcher(List<String> gmpIndexFilePath) {
-        init(gmpIndexFilePath);
+        load(gmpIndexFilePath);
     }
 
-
-    private void init(String storagePath) {
+    public void load(String storagePath) {
         File folder = new File(storagePath);
         if (!folder.exists() || !folder.isDirectory()) {
             throw new RuntimeException(storagePath + " 文件夹不存在");
@@ -88,28 +86,39 @@ public class DefaultIndexSearcher implements IndexSearcher {
         if (gmpIndexFilePath.isEmpty()) {
             throw new RuntimeException(storagePath + " 文件夹下没有 .gmpIndex 文件");
         }
-        init(gmpIndexFilePath);
+        load(gmpIndexFilePath);
     }
 
-
-    private void init(List<String> gmpIndexFilePath) {
-        allIndex = new ArrayList<>();
-        for (String path : gmpIndexFilePath) {
-            try (BufferedReader br = new BufferedReader(new FileReader(path))) {
-                String line = "";
-                while ((line = br.readLine()) != null) {
-                    allIndex.add(JSONObject.parseObject(line, DataIndex.class));
+    public void load(List<String> gmpIndexFilePath) {
+        List<DataIndex> allIndexTemp;
+        Map<String, List<DataIndex>> tagIndexTemp;
+        Map<String, List<DataIndex>> sourceIndexTemp;
+        Map<String, DataIndex> idIndexTemp;
+        try {
+            allIndexTemp = new ArrayList<>();
+            for (String path : gmpIndexFilePath) {
+                try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+                    String line = "";
+                    while ((line = br.readLine()) != null) {
+                        allIndexTemp.add(JSONObject.parseObject(line, DataIndex.class));
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e.getMessage());
                 }
-            } catch (Exception e) {
-                throw new RuntimeException(e.getMessage());
             }
+            tagIndexTemp = allIndexTemp.stream()
+                    .filter(dataIndex -> dataIndex.getTags() != null && !dataIndex.getTags().isEmpty())
+                    .flatMap(dataIndex -> dataIndex.getTags().stream().map(tag -> new AbstractMap.SimpleEntry<>(tag, dataIndex)))
+                    .collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
+            sourceIndexTemp = allIndexTemp.stream().collect(Collectors.groupingBy(index -> JSONObject.parseObject(index.getSource()).getString("source")));
+            idIndexTemp = allIndexTemp.stream().collect(Collectors.toMap(DataIndex::getId, Function.identity()));
+        } catch (Exception e) {
+            throw new RuntimeException("reload失败,", e);
         }
-        tagIndex = allIndex.stream()
-                .filter(dataIndex -> dataIndex.getTags() != null && !dataIndex.getTags().isEmpty())
-                .flatMap(dataIndex -> dataIndex.getTags().stream().map(tag -> new AbstractMap.SimpleEntry<>(tag, dataIndex)))
-                .collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
-        sourceIndex = allIndex.stream().collect(Collectors.groupingBy(index -> JSONObject.parseObject(index.getSource()).getString("source")));
-        idIndex = allIndex.stream().collect(Collectors.toMap(DataIndex::getId, Function.identity()));
+        allIndex = allIndexTemp;
+        tagIndex = tagIndexTemp;
+        sourceIndex = sourceIndexTemp;
+        idIndex = idIndexTemp;
     }
 
 

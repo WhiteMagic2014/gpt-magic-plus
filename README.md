@@ -25,10 +25,14 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.1.6
+
+- 优化 Gmp 中 answer,现在记忆长度过长也会和chat一样自动遗忘记忆
+- 优化 DefaultIndexSearcher,init方法更改为load方法,可以重载文件
+
 ### 1.1.5
 
 - 修复 Gmp 中 maxTokens 参数在部分方法中没有正确生效的bug
-
 
 ### 1.1.4
 

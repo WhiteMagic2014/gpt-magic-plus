@@ -353,6 +353,14 @@ public class Gmp {
                     }
                     flag = false;
                 } catch (Exception e) {
+                    JSONObject js = JSONObject.parseObject(e.getMessage());
+                    // 如果是长度超了。 遗忘一段记忆
+                    if (js.getJSONObject("error").getString("code").equals("context_length_exceeded")) {
+                        if (logs.containsKey(session)) {
+                            Queue<ChatLog> queue = logs.get(session);
+                            queue.poll();
+                        }
+                    }
                     flag = true;
                     try {
                         Thread.sleep(100);
