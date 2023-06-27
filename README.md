@@ -25,6 +25,10 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.1.8
+
+- 修复 ContextMemory 抽象类继承后无法重写方法的bug
+
 ### 1.1.7
 
 - 修复 Gmp 中 answer,无法正确遗忘记忆的bug

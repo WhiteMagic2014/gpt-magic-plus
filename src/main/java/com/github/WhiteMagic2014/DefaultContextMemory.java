@@ -45,7 +45,7 @@ public class DefaultContextMemory extends ContextMemory {
     }
 
     @Override
-    void setChatLog(String session, Queue<ChatLog> chatLogs) {
+    public void setChatLog(String session, Queue<ChatLog> chatLogs) {
         logs.put(session, chatLogs);
     }
 

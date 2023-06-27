@@ -22,14 +22,14 @@ public abstract class ContextMemory {
      * @param session
      * @return
      */
-    abstract Queue<ChatLog> chatLogs(String session);
+    public abstract Queue<ChatLog> chatLogs(String session);
 
     /**
      * 清除 chat的上下文
      *
      * @param session
      */
-    abstract void clearChatLogs(String session);
+    public abstract void clearChatLogs(String session);
 
 
     /**
@@ -39,7 +39,7 @@ public abstract class ContextMemory {
      * @param user
      * @param assistant
      */
-    abstract void addChatLog(String session, String user, String assistant);
+    public abstract void addChatLog(String session, String user, String assistant);
 
     /**
      * 直接 设置chat的上下文
@@ -47,7 +47,7 @@ public abstract class ContextMemory {
      * @param session
      * @param chatLogs
      */
-    abstract void setChatLog(String session, Queue<ChatLog> chatLogs);
+    public abstract void setChatLog(String session, Queue<ChatLog> chatLogs);
 
     /**
      * 设置chat 的system设定
@@ -55,13 +55,13 @@ public abstract class ContextMemory {
      * @param session
      * @param setting
      */
-    abstract void setPersonality(String session, String setting);
+    public abstract void setPersonality(String session, String setting);
 
     /**
      * 获取chat 的system设定
      *
      * @param session
      */
-    abstract String getPersonality(String session);
+    public abstract String getPersonality(String session);
 
 }
