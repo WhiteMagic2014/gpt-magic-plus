@@ -241,6 +241,7 @@ public class Gmp {
     }
 
     /**
+     * 现在不再推荐在 answer中直接给出全量向量集合，推荐 搭配IndexSearcher 使用
      * 根据相似度较高的几个(vectorNum)切片数据 回答问题
      *
      * @param question          问题
@@ -248,6 +249,7 @@ public class Gmp {
      * @param vectorNum         使用数据片段数量
      * @return
      */
+    @Deprecated
     public <T extends DataEmbedding> String answer(String question, List<T> dataEmbeddingPool, int vectorNum) {
         if (dataEmbeddingPool.isEmpty()) {
             return "无预训练数据";
@@ -285,21 +287,39 @@ public class Gmp {
         if (indexSearcher == null) {
             throw new RuntimeException("indexSearcher 未配置");
         }
-        return answer(session, question, indexSearcher);
+        List<DataIndex> indices = indexSearcher.search(question);
+        return answer(session, question, indices);
     }
 
 
     /**
      * 根据预训练数据回答问题,依赖提供的 indexSearcher
      *
-     * @param session  session id 可以保证上下文连贯
-     * @param question 问题
+     * @param session       session id 可以保证上下文连贯
+     * @param question      问题
+     * @param indexSearcher 向量搜索器
      * @return
      */
     public QuestionAnswer answer(String session, String question, IndexSearcher indexSearcher) throws Exception {
         if (indexSearcher == null) {
             throw new RuntimeException("indexSearcher 未配置");
         }
+        List<DataIndex> indices = indexSearcher.search(question);
+        return answer(session, question, indices);
+    }
+
+
+    /**
+     * 根据直接给出的 DataIndex 构造轮训归纳问答 ，
+     * 和 String answer(String question, List<T> dataEmbeddingPool, int vectorNum) 不同，这里将寻找相似向量的工作解耦，实际使用下会更自由
+     *
+     * @param session  session id 可以保证上下文连贯
+     * @param question 问题
+     * @param indices  相关切片
+     * @return
+     * @throws Exception
+     */
+    public QuestionAnswer answer(String session, String question, List<DataIndex> indices) throws Exception {
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
                 .maxTokens(maxTokens);
         if (StringUtils.isNotBlank(model)) {
@@ -316,7 +336,6 @@ public class Gmp {
         }
         QuestionAnswer answer = new QuestionAnswer();
         // 构造问答
-        List<DataIndex> indices = indexSearcher.search(question);
         answer.setRounds(indices.size());
         // 中间答案
         String result = "";

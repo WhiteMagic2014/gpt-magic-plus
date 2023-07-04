@@ -25,6 +25,10 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.1.9
+
+- Gmp 中新增 answer模式,现在支持直接根据提供的 DataIndex集合进行问答，将寻找相似向量的工作解耦，实际使用下会更自由
+
 ### 1.1.8
 
 - 修复 ContextMemory 抽象类继承后无法重写方法的bug
