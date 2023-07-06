@@ -25,9 +25,13 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
-### 1.1.10
+### 1.1.11
 
-- 优化 DefaultIndexSearcher 中的getByTag方法
+- 修复 getIndexByAllTag 和 getIndexByAnyTag 在没有tag时报错的bug
+
+### 1.1.10 bug
+
+- 优化 DefaultIndexSearcher 中的getByTag相关方法
 - 新增 DefaultIndexSearcher 中search方法，现在可以提供指定的向量池范围。
 
 ### 1.1.9

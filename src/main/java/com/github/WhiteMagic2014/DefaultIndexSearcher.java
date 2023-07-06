@@ -144,12 +144,14 @@ public class DefaultIndexSearcher implements IndexSearcher {
 
     public List<DataIndex> getIndexByAllTag(Set<String> includeAllTag) {
         return allIndex.stream()
+                .filter(dataIndex -> dataIndex.getTags() != null && !dataIndex.getTags().isEmpty())
                 .filter(index -> new HashSet<>(index.getTags()).containsAll(includeAllTag))
                 .collect(Collectors.toList());
     }
 
     public List<DataIndex> getIndexByAnyTag(Set<String> includeAnyTag) {
         return allIndex.stream()
+                .filter(dataIndex -> dataIndex.getTags() != null && !dataIndex.getTags().isEmpty())
                 .filter(index -> {
                     Set<String> indexTags = new HashSet<>(index.getTags());
                     indexTags.retainAll(includeAnyTag);
@@ -171,28 +173,30 @@ public class DefaultIndexSearcher implements IndexSearcher {
 
     @Override
     public List<DataIndex> search(String question) {
-        return search(question, allIndex, limit);
+        return search(question, allIndex, limit, model);
     }
 
 
     /**
      * 从给定的indices 找到最合适的n个向量 (n=全局设置的)
      *
-     * @param question
+     * @param question 问题
      * @return
      */
     public List<DataIndex> search(String question, List<DataIndex> indices) {
-        return search(question, indices, limit);
+        return search(question, indices, limit, model);
     }
 
     /**
      * 从给定的indices 找到最合适的n个向量
      *
-     * @param question
-     * @param n
+     * @param question 问题
+     * @param indices  向量池
+     * @param n        n个
+     * @param model    模式
      * @return
      */
-    public List<DataIndex> search(String question, List<DataIndex> indices, int n) {
+    public List<DataIndex> search(String question, List<DataIndex> indices, int n, int model) {
         List<Double> questionEmbedding = VectorUtil.input2Vector(question);
         if (model == 0) {
             // 相似度检索
