@@ -142,19 +142,27 @@ public class DefaultIndexSearcher implements IndexSearcher {
         return null;
     }
 
-    private List<DataIndex> getIndexByTag(Set<String> includeTag, Set<String> excludeTag) {
+    public List<DataIndex> getIndexByAllTag(Set<String> includeAllTag) {
         return allIndex.stream()
-                .filter(index -> new HashSet<>(index.getTags()).containsAll(includeTag))
-                .filter(index -> excludeTag.stream().noneMatch(index.getTags()::contains))
+                .filter(index -> new HashSet<>(index.getTags()).containsAll(includeAllTag))
                 .collect(Collectors.toList());
     }
 
+    public List<DataIndex> getIndexByAnyTag(Set<String> includeAnyTag) {
+        return allIndex.stream()
+                .filter(index -> {
+                    Set<String> indexTags = new HashSet<>(index.getTags());
+                    indexTags.retainAll(includeAnyTag);
+                    return !indexTags.isEmpty();
+                })
+                .collect(Collectors.toList());
+    }
 
-    private List<DataIndex> getIndexByTag(String tag) {
+    public List<DataIndex> getIndexByTag(String tag) {
         return tagIndex.get(tag);
     }
 
-    private List<DataIndex> getIndexBySource(String source) {
+    public List<DataIndex> getIndexBySource(String source) {
         return sourceIndex.entrySet().stream()
                 .filter(entry -> entry.getKey().contains(source))
                 .flatMap(entry -> entry.getValue().stream())
@@ -163,10 +171,32 @@ public class DefaultIndexSearcher implements IndexSearcher {
 
     @Override
     public List<DataIndex> search(String question) {
+        return search(question, allIndex, limit);
+    }
+
+
+    /**
+     * 从给定的indices 找到最合适的n个向量 (n=全局设置的)
+     *
+     * @param question
+     * @return
+     */
+    public List<DataIndex> search(String question, List<DataIndex> indices) {
+        return search(question, indices, limit);
+    }
+
+    /**
+     * 从给定的indices 找到最合适的n个向量
+     *
+     * @param question
+     * @param n
+     * @return
+     */
+    public List<DataIndex> search(String question, List<DataIndex> indices, int n) {
         List<Double> questionEmbedding = VectorUtil.input2Vector(question);
         if (model == 0) {
             // 相似度检索
-            return new ArrayList<>(allIndex).parallelStream()
+            return new ArrayList<>(indices).parallelStream()
                     .peek(index -> {
                         if (index.getBase64Embedding()) {
                             index.setEmbeddingWithQuery(Distance.cosineDistance(questionEmbedding, EmbeddingUtil.embeddingB64ToDoubleList(index.getContextEmbeddingB64())));
@@ -175,11 +205,11 @@ public class DefaultIndexSearcher implements IndexSearcher {
                         }
                     })
                     .sorted(Comparator.comparing(DataEmbedding::getEmbeddingWithQuery).reversed())
-                    .limit(limit)
+                    .limit(n)
                     .collect(Collectors.toList());
         } else if (model == 1) {
             // 首先相似度检索 然后获取每个 DataIndex上下文的关联
-            return new ArrayList<>(allIndex).parallelStream()
+            return new ArrayList<>(indices).parallelStream()
                     .peek(index -> {
                         if (index.getBase64Embedding()) {
                             index.setEmbeddingWithQuery(Distance.cosineDistance(questionEmbedding, EmbeddingUtil.embeddingB64ToDoubleList(index.getContextEmbeddingB64())));
@@ -188,7 +218,7 @@ public class DefaultIndexSearcher implements IndexSearcher {
                         }
                     })
                     .sorted(Comparator.comparing(DataEmbedding::getEmbeddingWithQuery).reversed())
-                    .limit(limit)
+                    .limit(n)
                     .map(index -> {
                         List<DataIndex> tmp = new ArrayList<>();
                         tmp.add(index);

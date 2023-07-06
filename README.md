@@ -25,6 +25,11 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.1.10
+
+- 优化 DefaultIndexSearcher 中的getByTag方法
+- 新增 DefaultIndexSearcher 中search方法，现在可以提供指定的向量池范围。
+
 ### 1.1.9
 
 - Gmp 中新增 answer模式,现在支持直接根据提供的 DataIndex集合进行问答，将寻找相似向量的工作解耦，实际使用下会更自由
