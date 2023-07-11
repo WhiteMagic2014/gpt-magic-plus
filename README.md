@@ -25,6 +25,10 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.1.12
+
+- IndexCreator 新增按照段落分割文本模式，相比与之前的文字长度分割，切片效果更好（当然再好也好不过人工）
+
 ### 1.1.11
 
 - 修复 getIndexByAllTag 和 getIndexByAnyTag 在没有tag时报错的bug

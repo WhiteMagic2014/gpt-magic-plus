@@ -28,28 +28,67 @@ public class IndexCreator {
 
     private boolean autoTags = false;//是否自动给切片生成标签
 
+    private boolean sliceByParagraph = false;// 切片模式
+
     public IndexCreator(String storage) {
         this.storage = storage;
     }
 
+    /**
+     * @param sliceSize 限制每片切片大小
+     * @return
+     */
     public IndexCreator sliceSize(int sliceSize) {
         this.sliceSize = sliceSize;
         return this;
     }
 
+    /**
+     * @param autoTags 是否自动打标签（gpt打标签，效果不一定好，复杂的内容建议不要这样）
+     * @return
+     */
     public IndexCreator autoTags(boolean autoTags) {
         this.autoTags = autoTags;
         return this;
     }
 
+    /**
+     * true = 根据段落分割。 避免了将一段文本从中切断造成断章取义的情况，但因为是按段落切片，会发生单个段落长度超过限制size的情况，对输入的文本有一定要求
+     * false = 根据字数限制 。会严格控制每个切片的长度
+     *
+     * @param sliceByParagraph 切片模式
+     */
+    public IndexCreator sliceByParagraph(boolean sliceByParagraph) {
+        this.sliceByParagraph = sliceByParagraph;
+        return this;
+    }
+
+    /**
+     * @param sliceSize 限制每片切片大小
+     * @return
+     */
     public void setSliceSize(int sliceSize) {
         this.sliceSize = sliceSize;
     }
 
+
+    /**
+     * @param autoTags 是否自动打标签（gpt打标签，效果不一定好，复杂的内容建议不要这样）
+     * @return
+     */
     public void setAutoTags(boolean autoTags) {
         this.autoTags = autoTags;
     }
 
+    /**
+     * true = 根据段落分割。 避免了将一段文本从中切断造成断章取义的情况，但因为是按段落切片，会发生单个段落长度超过限制size的情况，对输入的文本有一定要求
+     * false = 根据字数限制 。会严格控制每个切片的长度
+     *
+     * @param sliceByParagraph 切片模式
+     */
+    public void setSliceByParagraph(boolean sliceByParagraph) {
+        this.sliceByParagraph = sliceByParagraph;
+    }
 
     /**
      * @param context 文本内容
@@ -71,7 +110,12 @@ public class IndexCreator {
         String fileName = createFile(source);
         List<DataIndex> dataIndices = new ArrayList<>();
         String uuid = UUID.randomUUID().toString();
-        List<String> contextPieces = sliceContext(context, sliceSize);
+        List<String> contextPieces;
+        if (sliceByParagraph) {
+            contextPieces = sliceContextParagraph(context, sliceSize);
+        } else {
+            contextPieces = sliceContext(context, sliceSize);
+        }
         for (int i = 0; i < contextPieces.size(); i++) {
             String contextPiece = contextPieces.get(i);
             DataIndex tmp = new DataIndex();
@@ -141,7 +185,12 @@ public class IndexCreator {
             for (int i = 1; i <= document.getNumberOfPages(); i++) {
                 stripper.setStartPage(i);
                 stripper.setEndPage(i);
-                List<String> contextPieces = sliceContext(stripper.getText(document).replace(" ", ""), sliceSize);
+                List<String> contextPieces;
+                if (sliceByParagraph) {
+                    contextPieces = sliceContextParagraph(stripper.getText(document), sliceSize);
+                } else {
+                    contextPieces = sliceContext(stripper.getText(document), sliceSize);
+                }
                 for (String contextPiece : contextPieces) {
                     DataIndex tmp = new DataIndex();
                     tmp.setId(uuid + "_" + no);
@@ -258,6 +307,10 @@ public class IndexCreator {
      * @return
      */
     public static List<String> sliceContext(String context, int size) {
+        context = context
+                .replace(" ", "")
+                .replace(" ", "")
+                .replaceAll("(\\n\\r|\\n)+", "\n");
         List<String> result = new ArrayList<>();
         int start = 0;
         int end = size;
@@ -273,6 +326,44 @@ public class IndexCreator {
             result.add(sb.toString());
             start = end;
             end += size;
+        }
+        return result;
+    }
+
+
+    /**
+     * 文本按段落切片(因为是按段落切片，会发生单个段落长度超过限制size的情况，对输入的文本有一定要求)
+     *
+     * @param context 文本
+     * @param size    每片大小
+     * @return
+     */
+    public static List<String> sliceContextParagraph(String context, int size) {
+        context = context
+                .replace(" ", "")
+                .replace(" ", "")
+                .replaceAll("(\\n\\r|\\n)+", "\n");
+
+        String[] lines = context.split("\n");
+        List<String> result = new ArrayList<>();
+        StringBuilder temp = new StringBuilder();
+        for (int i = 0; i < lines.length; ) {
+            String line = lines[i];
+            if ((temp.length() + line.length()) <= size) {
+                temp.append(line).append("\n");
+                i++;
+            } else {
+                if (temp.length() > 0) {
+                    result.add(temp.toString());
+                    temp.delete(0, temp.length());
+                } else {
+                    result.add(line);
+                    i++;
+                }
+            }
+        }
+        if (temp.length() > 0) {
+            result.add(temp.toString());
         }
         return result;
     }
