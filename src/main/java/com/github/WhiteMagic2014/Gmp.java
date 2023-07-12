@@ -34,6 +34,7 @@ public class Gmp {
     private String model;
 
     public Gmp() {
+        this.contextMemory = new DefaultContextMemory(5);
     }
 
     public Gmp(IndexSearcher indexSearcher) {

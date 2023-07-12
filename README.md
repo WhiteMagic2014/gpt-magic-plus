@@ -25,6 +25,9 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.1.13
+- 修复 gmp 无参构造情况下，没有默认初始化ContextMemory的bug
+
 ### 1.1.12
 
 - IndexCreator 新增按照段落分割文本模式，相比与之前的文字长度分割，切片效果更好（当然再好也好不过人工）
