@@ -25,7 +25,18 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.1.14
+
+- 优化 gmp 模式answer模式，初次问答和后续优化的prompt可以自定义
+```
+gmp.setAnswerPromptTemplate("首次问答prompt");
+gmp.setAnswerOptimizePromptTemplate("后续根据额外数据优化prompt");
+```
+- 初次问答prompt 需要包含参数 ${context} , ${question}
+- 优化prompt 需要包含参数 ${context}
+
 ### 1.1.13
+
 - 修复 gmp 无参构造情况下，没有默认初始化ContextMemory的bug
 
 ### 1.1.12

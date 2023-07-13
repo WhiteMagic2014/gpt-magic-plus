@@ -33,6 +33,10 @@ public class Gmp {
 
     private String model;
 
+    private String answerPromptTemplate = "上下文信息如下\n----------------\n${context}\n----------------\n给定上下文信息而非先验知识，回答以下问题：\n${question}\n";
+    private String answerOptimizePromptTemplate = "我们有机会（仅在必要时）通过下面的更多上下文来完善上述答案。\n----------------\n${context}\n----------------\n在新的背景下，完善原始答案以更好地回答问题。如果上下文没有用处，请再次输出原始答案。";
+
+
     public Gmp() {
         this.contextMemory = new DefaultContextMemory(5);
     }
@@ -57,6 +61,21 @@ public class Gmp {
 
     public void setStream(boolean stream) {
         this.stream = stream;
+    }
+
+
+    /**
+     * @param answerPromptTemplate 首次问答prompt
+     */
+    public void setAnswerPromptTemplate(String answerPromptTemplate) {
+        this.answerPromptTemplate = answerPromptTemplate;
+    }
+
+    /**
+     * @param answerOptimizePromptTemplate 后续根据额外数据优化prompt
+     */
+    public void setAnswerOptimizePromptTemplate(String answerOptimizePromptTemplate) {
+        this.answerOptimizePromptTemplate = answerOptimizePromptTemplate;
     }
 
     public String originChat(List<ChatMessage> messages, int maxTokens) {
@@ -267,12 +286,11 @@ public class Gmp {
                 .sorted(Comparator.comparing(DataEmbedding::getEmbeddingWithQuery).reversed())
                 .collect(Collectors.toList());
         List<ChatMessage> messages = new ArrayList<>();
-        StringBuilder prompt = new StringBuilder("下面是上下文信息\n------------\n");
+        StringBuilder context = new StringBuilder();
         for (int i = 0; i < Math.min(vectorNum, sorted.size()); i++) {
-            prompt.append(sorted.get(i).getContext());
+            context.append(sorted.get(i).getContext()).append("\n");
         }
-        prompt.append(" \n------------\n根据上下文信息而非先前知识，回答问题：").append(question);
-        messages.add(ChatMessage.userMessage(prompt.toString()));
+        messages.add(ChatMessage.userMessage(answerPromptTemplate.replace("${context}", context).replace("${question}", question)));
         return originChat(messages, maxTokens);
     }
 
@@ -347,13 +365,11 @@ public class Gmp {
             // 本轮问题的 prompt
             List<ChatMessage> questionRounds = new ArrayList<>();
             if (i == 0) {
-                String promptTemplate = "上下文信息如下\n----------------\n{context}\n----------------\n给定上下文信息而非先验知识，回答以下问题：\n{question}\n";
-                questionRounds.add(ChatMessage.userMessage(promptTemplate.replace("{context}", index.getContext()).replace("{question}", question)));
+                questionRounds.add(ChatMessage.userMessage(answerPromptTemplate.replace("${context}", index.getContext()).replace("${question}", question)));
             } else {
-                String promptTemplate = "我们有机会（仅在必要时）通过下面的更多上下文来完善上述答案。\n----------------\n{context}\n----------------\n在新的背景下，完善原始答案以更好地回答问题。如果上下文没有用处，请再次输出原始答案。";
                 questionRounds.add(ChatMessage.userMessage(question));
                 questionRounds.add(ChatMessage.assistantMessage(result));
-                questionRounds.add(ChatMessage.userMessage(promptTemplate.replace("{context}", index.getContext())));
+                questionRounds.add(ChatMessage.userMessage(answerOptimizePromptTemplate.replace("${context}", index.getContext())));
             }
             // 获得答案
             boolean flag;
