@@ -25,6 +25,10 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.1.15
+
+- 更新[gpt-magic](https://github.com/WhiteMagic2014/gpt-magic.git)版本，model中的模型变更，旧版本的CreateCompletionRequest 即将废弃
+
 ### 1.1.14
 
 - 优化 gmp 模式answer模式，初次问答和后续优化的prompt可以自定义
