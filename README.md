@@ -25,7 +25,7 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
-### 1.1.15
+### 1.2.0
 
 - 更新[gpt-magic](https://github.com/WhiteMagic2014/gpt-magic.git)版本，model中的模型变更，旧版本的CreateCompletionRequest 即将废弃
 
