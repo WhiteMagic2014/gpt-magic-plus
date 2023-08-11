@@ -134,13 +134,16 @@ public class Gmp {
         } catch (Exception e) {
             try {
                 JSONObject js = JSONObject.parseObject(e.getMessage());
+                String code = js.getJSONObject("error").getString("code");
                 // 如果是长度超了。 遗忘一段记忆
-                if (js.getJSONObject("error").getString("code").equals("context_length_exceeded")) {
+                if (code.equals("context_length_exceeded")) {
                     if (queue != null && !queue.isEmpty()) {
                         queue.poll();
                     }
                     // 再次请求
                     return chat(session, prompt, maxTokens);
+                } else {
+                    return code;
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -389,8 +392,9 @@ public class Gmp {
                 } catch (Exception e) {
                     try {
                         JSONObject js = JSONObject.parseObject(e.getMessage());
+                        String code = js.getJSONObject("error").getString("code");
                         // 如果是长度超了。 遗忘一段记忆，这里需要重新构造request
-                        if (js.getJSONObject("error").getString("code").equals("context_length_exceeded")) {
+                        if (code.equals("context_length_exceeded")) {
                             // 还有东西能遗忘,遗忘前两条数据（一组问答）
                             if (chatLogTmp.size() > 2) {
                                 chatLogTmp.remove(0);
@@ -399,6 +403,8 @@ public class Gmp {
                                 // 没东西能忘记了，说明单单本次的prompt就超了，没办法处理
                                 throw new Exception("prompt 过长无法完成本次请求");
                             }
+                        } else {
+                            throw new Exception(code);
                         }
                     } catch (JSONException je) {
                         je.printStackTrace();
