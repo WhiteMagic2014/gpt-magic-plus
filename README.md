@@ -25,6 +25,8 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.2.2
+- 更新[gpt-magic](https://github.com/WhiteMagic2014/gpt-magic.git)版本，修复了有时候无法正确抛出RuntimeException的问题
 ### 1.2.1
 
 - 优化gmp中的 chat 和 answer,现在会返回openai的错误码，方便具体使用的时候针对处理
