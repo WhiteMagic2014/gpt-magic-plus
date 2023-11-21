@@ -1,7 +1,7 @@
 package com.github.WhiteMagic2014;
 
 /**
- * @Description: TODO
+ * @Description: Assistant session
  * @author: magic chen
  * @date: 2023/11/21 14:51
  **/
@@ -13,7 +13,7 @@ public abstract class AssistantContext {
      * @param session
      * @return
      */
-    public abstract String setInstructions(String session, String instructions);
+    public abstract void setInstructions(String session, String instructions);
 
     /**
      * 获得用户的Instructions
@@ -31,7 +31,7 @@ public abstract class AssistantContext {
      * @param threadId
      * @return
      */
-    public abstract String setThreadId(String session, String threadId);
+    public abstract void setThreadId(String session, String threadId);
 
     /**
      * 获得对话的 threadId

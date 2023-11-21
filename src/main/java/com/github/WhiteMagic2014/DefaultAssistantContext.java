@@ -15,8 +15,8 @@ public class DefaultAssistantContext extends AssistantContext {
 
 
     @Override
-    public String setInstructions(String session, String instructions) {
-        return sessionInstructions.put(session, instructions);
+    public void setInstructions(String session, String instructions) {
+        sessionInstructions.put(session, instructions);
     }
 
 
@@ -27,8 +27,8 @@ public class DefaultAssistantContext extends AssistantContext {
 
 
     @Override
-    public String setThreadId(String session, String threadId) {
-        return sessionThread.put(session, threadId);
+    public void setThreadId(String session, String threadId) {
+        sessionThread.put(session, threadId);
     }
 
     @Override
