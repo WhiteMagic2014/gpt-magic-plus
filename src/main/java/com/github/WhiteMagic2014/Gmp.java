@@ -107,7 +107,7 @@ public class Gmp {
     }
 
 
-    public String chat(String session, ChatMessage userMessage, int maxTokens) {
+    public String chat(String session, ChatMessage userMessage, String model, int maxTokens) {
         String personal = contextMemory.getPersonality(session);
         // 构造初始请求
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
@@ -142,7 +142,7 @@ public class Gmp {
                     queue.poll();
                 }
                 // 再次请求
-                return chat(session, userMessage, maxTokens);
+                return chat(session, userMessage, model, maxTokens);
             } else {
                 return code;
             }
@@ -154,7 +154,7 @@ public class Gmp {
 
 
     public String chat(String session, String prompt, int maxTokens) {
-        return chat(session, ChatMessage.userMessage(prompt), maxTokens);
+        return chat(session, ChatMessage.userMessage(prompt), model, maxTokens);
     }
 
     public String chat(String session, String prompt) {
