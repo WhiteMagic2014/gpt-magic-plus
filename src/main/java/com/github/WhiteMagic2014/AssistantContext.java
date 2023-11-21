@@ -54,5 +54,5 @@ public abstract class AssistantContext {
      * @param session
      * @return
      */
-    public abstract boolean checkThreadId(String session);
+    public abstract Boolean checkThreadId(String session);
 }

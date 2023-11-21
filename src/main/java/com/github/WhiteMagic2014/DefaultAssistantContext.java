@@ -42,7 +42,7 @@ public class DefaultAssistantContext extends AssistantContext {
     }
 
     @Override
-    public boolean checkThreadId(String session) {
+    public Boolean checkThreadId(String session) {
         return sessionThread.containsKey(session);
     }
 }
