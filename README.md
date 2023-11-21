@@ -25,8 +25,17 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.3.0
+
+- 更新[gpt-magic](https://github.com/WhiteMagic2014/gpt-magic.git)版本1.9.0(支持assistant，dall-e-3，图片输入)
+- GmpAssistant 简单封装了基于Assistant Retrieval的 对话功能，可以根据给assistant绑定的文件进行回答问题。
+  创建Assistant以及 绑定文件可以参考gpt-magic中的 CreateAssistantRequest 或者
+  CreateAssistantFileRequest。前者创建Assistant的同时绑定文件，后者将文件追加绑定给已经创建的Assistant。上传文件参考UploadFileRequest
+
 ### 1.2.2
+
 - 更新[gpt-magic](https://github.com/WhiteMagic2014/gpt-magic.git)版本，修复了有时候无法正确抛出RuntimeException的问题
+
 ### 1.2.1
 
 - 优化gmp中的 chat 和 answer,现在会返回openai的错误码，方便具体使用的时候针对处理

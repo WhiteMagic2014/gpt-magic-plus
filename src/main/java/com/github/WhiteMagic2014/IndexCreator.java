@@ -294,7 +294,7 @@ public class IndexCreator {
                 .temperature(0.0f);
         request.addMessage(ChatMessage.systemMessage("是你一个数据标记员，负责给数据做标记"));
         request.addMessage(ChatMessage.userMessage("请给以下内容1-3个相关的标签,如果有多个标签,用'&'符号隔开:\n" + context));
-        String tmp = request.sendForChoices().get(0).getMessage().getContent();
+        String tmp = (String) request.sendForChoices().get(0).getMessage().getContent();
         return Arrays.stream(tmp.split("&")).map(String::trim).filter(StringUtils::isNotBlank).collect(Collectors.toList());
     }
 

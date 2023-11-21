@@ -1,6 +1,5 @@
 package com.github.WhiteMagic2014;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.github.WhiteMagic2014.beans.ChatLog;
@@ -9,16 +8,19 @@ import com.github.WhiteMagic2014.beans.DataIndex;
 import com.github.WhiteMagic2014.beans.QuestionAnswer;
 import com.github.WhiteMagic2014.gptApi.Chat.CreateChatCompletionRequest;
 import com.github.WhiteMagic2014.gptApi.Chat.pojo.ChatMessage;
+import com.github.WhiteMagic2014.gptApi.GptModel;
 import com.github.WhiteMagic2014.gptApi.Images.CreateImageRequest;
+import com.github.WhiteMagic2014.gptApi.Images.pojo.OpenAiImage;
 import com.github.WhiteMagic2014.util.Distance;
 import com.github.WhiteMagic2014.util.EmbeddingUtil;
+import com.github.WhiteMagic2014.util.RequestUtil;
 import com.github.WhiteMagic2014.util.VectorUtil;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.ByteArrayOutputStream;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Queue;
 import java.util.stream.Collectors;
 
 public class Gmp {
@@ -85,14 +87,14 @@ public class Gmp {
             request.model(model);
         }
         for (ChatMessage msg : messages) {
-            request.addMessage(msg.getRole(), msg.getContent());
+            request.addMessage(msg);
         }
         String result = "";
         try {
             if (stream) {
-                result = streamRequest(request);
+                result = RequestUtil.streamRequest(request);
             } else {
-                result = request.sendForChoices().get(0).getMessage().getContent();
+                result = (String) request.sendForChoices().get(0).getMessage().getContent();
             }
         } catch (Exception e) {
             return "很抱歉，出错了";
@@ -105,7 +107,7 @@ public class Gmp {
     }
 
 
-    public String chat(String session, String prompt, int maxTokens) {
+    public String chat(String session, ChatMessage userMessage, int maxTokens) {
         String personal = contextMemory.getPersonality(session);
         // 构造初始请求
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
@@ -122,76 +124,41 @@ public class Gmp {
                 request.addMessage(ChatMessage.assistantMessage(l.getAssistant()));
             });
         }
-        request.addMessage(ChatMessage.userMessage(prompt));
+        request.addMessage(userMessage);
         // 发送请求
         String result = "";
         try {
             if (stream) {
-                result = streamRequest(request);
+                result = RequestUtil.streamRequest(request);
             } else {
-                result = request.sendForChoices().get(0).getMessage().getContent();
+                result = (String) request.sendForChoices().get(0).getMessage().getContent();
             }
         } catch (Exception e) {
-            try {
-                JSONObject js = JSONObject.parseObject(e.getMessage());
-                String code = js.getJSONObject("error").getString("code");
-                // 如果是长度超了。 遗忘一段记忆
-                if (code.equals("context_length_exceeded")) {
-                    if (queue != null && !queue.isEmpty()) {
-                        queue.poll();
-                    }
-                    // 再次请求
-                    return chat(session, prompt, maxTokens);
-                } else {
-                    return code;
+            JSONObject js = JSONObject.parseObject(e.getMessage());
+            String code = js.getJSONObject("error").getString("code");
+            // 如果是长度超了。 遗忘一段记忆
+            if (code.equals("context_length_exceeded")) {
+                if (queue != null && !queue.isEmpty()) {
+                    queue.poll();
                 }
-            } catch (Exception ex) {
-                ex.printStackTrace();
+                // 再次请求
+                return chat(session, userMessage, maxTokens);
+            } else {
+                return code;
             }
-            return "很抱歉，出错了";
         }
         // 记忆上下文
-        addChatLog(session, prompt, result);
+        addChatLog(session, (String) userMessage.getContent(), result);
         return result;
+    }
+
+
+    public String chat(String session, String prompt, int maxTokens) {
+        return chat(session, ChatMessage.userMessage(prompt), maxTokens);
     }
 
     public String chat(String session, String prompt) {
         return chat(session, prompt, maxTokens);
-    }
-
-
-    public String streamRequest(CreateChatCompletionRequest request) {
-        StringBuilder sb = new StringBuilder();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        request.stream(true).outputStream(baos).send();
-        byte[] data = baos.toByteArray();
-        if (data.length > 0) {
-            String result = new String(data);
-            baos.reset();
-
-            // 用正则截取 效率更高
-            String pattern = "(?<=\"content\":\").*?(?=\\\"})";
-            Pattern regex = Pattern.compile(pattern);
-            Matcher matcher = regex.matcher(result);
-            while (matcher.find()) {
-                sb.append(matcher.group(0).replace("\\n", "\n").replace("\\r", "\r"));
-            }
-
-            // 转jsonArray提取
-//            String str = "[" + result.replace("data: [DONE]", "").replace("data:", ",") + "]";
-//            JSONArray jsonArray = JSON.parseArray(str);
-//            for (int i = 0; i < jsonArray.size(); i++) {
-//                JSONObject choice = jsonArray.getJSONObject(i).getJSONArray("choices").getJSONObject(0);
-//                if ("stop".equals(choice.getString("finish_reason"))) {
-//                    break;
-//                }
-//                JSONObject delta = choice.getJSONObject("delta");
-//                if (delta.containsKey("content")) {
-//                    sb.append(delta.getString("content"));
-//                }
-//            }
-        }
-        return sb.toString();
     }
 
 
@@ -206,7 +173,6 @@ public class Gmp {
         contextMemory.setPersonality(session, setting);
         return "已经设定为: " + setting;
     }
-
 
     /**
      * 清除记忆上下文
@@ -240,27 +206,21 @@ public class Gmp {
      * 作图
      *
      * @param prompt
-     * @param n
      * @return
      */
-    public List<String> image(String prompt, int n) {
+    public String image(String prompt) {
         CreateImageRequest request = new CreateImageRequest()
+                .model(GptModel.Dall_E_3)
+                .styleVivid()
                 .prompt(prompt)
-                .n(n)
-                .largeSize();
-        JSONObject temp = null;
+                .size1024x1024();
+        List<OpenAiImage> temp = null;
         try {
-            temp = request.send();
+            temp = request.sendForImages();
         } catch (Exception e) {
-            return Collections.singletonList("出错了");
+            return "出错了";
         }
-        List<String> resultList = new ArrayList<>();
-        JSONArray array = temp.getJSONArray("data");
-        for (int i = 0; i < array.size(); i++) {
-            JSONObject jsonObject = array.getJSONObject(i);
-            resultList.add(jsonObject.getString("url"));
-        }
-        return resultList;
+        return temp.get(0).getUrl();
     }
 
     /**
@@ -384,9 +344,9 @@ public class Gmp {
                 request.messages(new ArrayList<>(requestMessage));
                 try {
                     if (stream) {
-                        result = streamRequest(request);
+                        result = RequestUtil.streamRequest(request);
                     } else {
-                        result = request.sendForChoices().get(0).getMessage().getContent();
+                        result = (String) request.sendForChoices().get(0).getMessage().getContent();
                     }
                     flag = false;
                 } catch (Exception e) {
