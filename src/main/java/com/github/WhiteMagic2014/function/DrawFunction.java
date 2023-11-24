@@ -44,7 +44,7 @@ public class DrawFunction extends GmpFunction {
                     .styleVivid()
                     .size1024x1024().
                     formatUrl().sendForImages().get(0);
-            result = "图片地址: \n" + image.getUrl() + "\n语句:\n" + image.getRevised_prompt();
+            result = "图片地址: (注意,请将完整的地址返回，不要截取url中的任何部分)\n" + image.getUrl();
         } catch (Exception e) {
             result = "很抱歉,作图的时候出了一点问题,可以稍后再次尝试";
         }

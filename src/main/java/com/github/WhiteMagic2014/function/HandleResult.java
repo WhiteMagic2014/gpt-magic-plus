@@ -37,4 +37,12 @@ public class HandleResult {
     public void setResult(String result) {
         this.result = result;
     }
+
+    @Override
+    public String toString() {
+        return "HandleResult{" +
+                "gptProcess=" + gptProcess +
+                ", result='" + result + '\'' +
+                '}';
+    }
 }

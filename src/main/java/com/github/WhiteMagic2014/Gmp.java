@@ -149,17 +149,21 @@ public class Gmp {
                 }
             }
         } catch (Exception e) {
-            JSONObject js = JSONObject.parseObject(e.getMessage());
-            String code = js.getJSONObject("error").getString("code");
-            // 如果是长度超了。 遗忘一段记忆
-            if (code.equals("context_length_exceeded")) {
-                if (queue != null && !queue.isEmpty()) {
-                    queue.poll();
+            try {
+                JSONObject js = JSONObject.parseObject(e.getMessage());
+                String code = js.getJSONObject("error").getString("code");
+                // 如果是长度超了。 遗忘一段记忆
+                if (code.equals("context_length_exceeded")) {
+                    if (queue != null && !queue.isEmpty()) {
+                        queue.poll();
+                    }
+                    // 再次请求
+                    return chat(session, userMessage, model, maxTokens);
+                } else {
+                    return code;
                 }
-                // 再次请求
-                return chat(session, userMessage, model, maxTokens);
-            } else {
-                return code;
+            } catch (Exception je) {
+                return e.getMessage();
             }
         }
         // 记忆上下文
