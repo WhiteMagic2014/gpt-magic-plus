@@ -35,7 +35,7 @@ public abstract class GmpFunction {
      * @param assistantTempMessage gpt返回的方法调用
      * @return gpt 结合内部方法返回处理的结果
      */
-    public String handleToolMessage(ChatMessage userMessage, ChatMessage assistantTempMessage, String model) {
+    public String handleToolMessage(ChatMessage userMessage, ChatMessage assistantTempMessage) {
         JSONObject functionJson = assistantTempMessage.getTool_calls().getJSONObject(0).getJSONObject("function");
         String callId = assistantTempMessage.getTool_calls().getJSONObject(0).getString("id");
         JSONObject arguments = functionJson.getJSONObject("arguments");

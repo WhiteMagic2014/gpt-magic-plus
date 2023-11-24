@@ -143,7 +143,7 @@ public class Gmp {
                     // 函数调用 走内部代理
                     Map<String, GmpFunction> handleMap = gmpFunction.stream().collect(Collectors.toMap(GmpFunction::getName, Function.identity()));
                     JSONObject functionJson = message.getTool_calls().getJSONObject(0).getJSONObject("function");
-                    result = handleMap.get(functionJson.getString("name")).handleToolMessage(userMessage, message, model);
+                    result = handleMap.get(functionJson.getString("name")).handleToolMessage(userMessage, message);
                 } else {
                     result = (String) request.sendForChoices().get(0).getMessage().getContent();
                 }
