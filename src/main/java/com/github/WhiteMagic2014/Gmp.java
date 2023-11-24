@@ -6,21 +6,21 @@ import com.github.WhiteMagic2014.beans.ChatLog;
 import com.github.WhiteMagic2014.beans.DataEmbedding;
 import com.github.WhiteMagic2014.beans.DataIndex;
 import com.github.WhiteMagic2014.beans.QuestionAnswer;
+import com.github.WhiteMagic2014.function.GmpFunction;
 import com.github.WhiteMagic2014.gptApi.Chat.CreateChatCompletionRequest;
 import com.github.WhiteMagic2014.gptApi.Chat.pojo.ChatMessage;
 import com.github.WhiteMagic2014.gptApi.GptModel;
 import com.github.WhiteMagic2014.gptApi.Images.CreateImageRequest;
 import com.github.WhiteMagic2014.gptApi.Images.pojo.OpenAiImage;
+import com.github.WhiteMagic2014.tool.FunctionTool;
 import com.github.WhiteMagic2014.util.Distance;
 import com.github.WhiteMagic2014.util.EmbeddingUtil;
 import com.github.WhiteMagic2014.util.RequestUtil;
 import com.github.WhiteMagic2014.util.VectorUtil;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Gmp {
@@ -107,12 +107,19 @@ public class Gmp {
     }
 
 
-    public String chat(String session, ChatMessage userMessage, String model, int maxTokens) {
+    public String chat(String session, ChatMessage userMessage, String model, int maxTokens, List<GmpFunction> gmpFunction) {
+        // 有函数
+        boolean hasFunction = (gmpFunction != null) && (!gmpFunction.isEmpty());
+
         String personal = contextMemory.getPersonality(session);
         // 构造初始请求
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
                 .maxTokens(maxTokens)
                 .addMessage(ChatMessage.systemMessage(personal));
+        if (hasFunction) {
+            List<FunctionTool> functionTools = gmpFunction.stream().map(GmpFunction::getFunctionTool).collect(Collectors.toList());
+            request.tools(functionTools);
+        }
         if (StringUtils.isNotBlank(model)) {
             request.model(model);
         }
@@ -128,10 +135,18 @@ public class Gmp {
         // 发送请求
         String result = "";
         try {
-            if (stream) {
+            if (stream && !hasFunction) {
                 result = RequestUtil.streamRequest(request);
             } else {
-                result = (String) request.sendForChoices().get(0).getMessage().getContent();
+                ChatMessage message = request.sendForChoices().get(0).getMessage();
+                if (message.getTool_calls() != null) {
+                    // 函数调用 走内部代理
+                    Map<String, GmpFunction> handleMap = gmpFunction.stream().collect(Collectors.toMap(GmpFunction::getName, Function.identity()));
+                    JSONObject functionJson = message.getTool_calls().getJSONObject(0).getJSONObject("function");
+                    result = handleMap.get(functionJson.getString("name")).handleToolMessage(userMessage, message, model);
+                } else {
+                    result = (String) request.sendForChoices().get(0).getMessage().getContent();
+                }
             }
         } catch (Exception e) {
             JSONObject js = JSONObject.parseObject(e.getMessage());
@@ -148,17 +163,32 @@ public class Gmp {
             }
         }
         // 记忆上下文
-        addChatLog(session, (String) userMessage.getContent(), result);
+        Object content = userMessage.getContent();
+        StringBuilder contentStr = new StringBuilder();
+        if (content instanceof String) {
+            contentStr = new StringBuilder((String) content);
+        } else if (content instanceof ArrayList) {
+            ArrayList<JSONObject> t = (ArrayList<JSONObject>) content;
+            for (JSONObject j : t) {
+                if (j.get("type").equals("text")) {
+                    contentStr.append(j.getString("text"));
+                }
+            }
+        }
+        addChatLog(session, contentStr.toString(), result);
         return result;
     }
 
+    public String chat(String session, ChatMessage userMessage, String model, int maxTokens) {
+        return chat(session, userMessage, model, maxTokens, null);
+    }
 
     public String chat(String session, String prompt, int maxTokens) {
-        return chat(session, ChatMessage.userMessage(prompt), model, maxTokens);
+        return chat(session, ChatMessage.userMessage(prompt), model, maxTokens, null);
     }
 
     public String chat(String session, String prompt) {
-        return chat(session, prompt, maxTokens);
+        return chat(session, ChatMessage.userMessage(prompt), model, maxTokens, null);
     }
 
 
@@ -254,7 +284,7 @@ public class Gmp {
             context.append(sorted.get(i).getContext()).append("\n");
         }
         messages.add(ChatMessage.userMessage(answerPromptTemplate.replace("${context}", context).replace("${question}", question)));
-        return originChat(messages, maxTokens);
+        return originChat(messages);
     }
 
 

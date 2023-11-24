@@ -31,6 +31,8 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 - GmpAssistant 简单封装了基于Assistant Retrieval的 对话功能，可以根据给assistant绑定的文件进行回答问题。
   创建Assistant以及 绑定文件可以参考gpt-magic中的 CreateAssistantRequest 或者
   CreateAssistantFileRequest。前者创建Assistant的同时绑定文件，后者将文件追加绑定给已经创建的Assistant。上传文件参考UploadFileRequest
+- Gmp Chat 支持函数调用，兼容多模态输入
+- 新增 抽象父类GmpFunction，作为gmp chat 的函数调用的方法输入，已经默认实现了一个 DrawFunction 实现作图。
 
 ### 1.2.2
 
