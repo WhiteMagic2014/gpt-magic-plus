@@ -5,6 +5,7 @@ import com.github.WhiteMagic2014.gptApi.Chat.CreateChatCompletionRequest;
 import com.github.WhiteMagic2014.gptApi.Chat.pojo.ChatMessage;
 import com.github.WhiteMagic2014.gptApi.GptModel;
 import com.github.WhiteMagic2014.tool.FunctionTool;
+import com.github.WhiteMagic2014.util.RequestUtil;
 
 /**
  * @Description: 为了使用 gmp的 函数调用
@@ -41,16 +42,13 @@ public abstract class GmpFunction {
         JSONObject arguments = functionJson.getJSONObject("arguments");
         HandleResult handleResult = handle(arguments);
         if (handleResult.getGptProcess()) {
-            ChatMessage result = new CreateChatCompletionRequest()
+            CreateChatCompletionRequest request = new CreateChatCompletionRequest()
                     .addTool(getFunctionTool())
                     .model(GptModel.gpt_4_function)
                     .addMessage(userMessage)
                     .addMessage(assistantTempMessage)// gpt result
-                    .addMessage(ChatMessage.toolMessage(callId, handleResult.getResult())) // send a function message with function_name and custom result
-                    .sendForChoices()
-                    .get(0)
-                    .getMessage();
-            return (String) result.getContent();
+                    .addMessage(ChatMessage.toolMessage(callId, handleResult.getResult()));  // send a function message with function_name and custom result
+            return RequestUtil.streamRequest(request);
         } else {
             return handleResult.getResult();
         }
