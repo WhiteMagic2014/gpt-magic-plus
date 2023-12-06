@@ -1,5 +1,7 @@
 package com.github.WhiteMagic2014;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.github.WhiteMagic2014.beans.ChatLog;
@@ -19,6 +21,7 @@ import com.github.WhiteMagic2014.util.RequestUtil;
 import com.github.WhiteMagic2014.util.VectorUtil;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -135,16 +138,30 @@ public class Gmp {
         // 发送请求
         String result = "";
         try {
-            if (stream && !hasFunction) {
-                result = RequestUtil.streamRequest(request);
-            } else {
-                ChatMessage message = request.sendForChoices().get(0).getMessage();
+            if (hasFunction) {
+                ChatMessage message;
+                if (stream) {
+                    // 流
+                    message = RequestUtil.streamRequestV2(request);
+                } else {
+                    // 非流
+                    message = request.sendForChoices().get(0).getMessage();
+                }
                 if (message.getTool_calls() != null) {
                     // 函数调用 走内部代理
                     Map<String, GmpFunction> handleMap = gmpFunction.stream().collect(Collectors.toMap(GmpFunction::getName, Function.identity()));
                     JSONObject functionJson = message.getTool_calls().getJSONObject(0).getJSONObject("function");
                     result = handleMap.get(functionJson.getString("name")).handleToolMessage(userMessage, message);
                 } else {
+                    result = (String) request.sendForChoices().get(0).getMessage().getContent();
+                }
+            } else {
+                // 无方法调用
+                if (stream) {
+                    // 流
+                    result = RequestUtil.streamRequest(request);
+                } else {
+                    // 非流
                     result = (String) request.sendForChoices().get(0).getMessage().getContent();
                 }
             }

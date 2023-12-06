@@ -25,6 +25,11 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.3.1
+
+- 更新[gpt-magic](https://github.com/WhiteMagic2014/gpt-magic.git)版本1.9.1(stream模式支持function调用)
+- 优化gmp函数调用
+
 ### 1.3.0
 
 - 更新[gpt-magic](https://github.com/WhiteMagic2014/gpt-magic.git)版本1.9.0(支持assistant，dall-e-3，图片输入)

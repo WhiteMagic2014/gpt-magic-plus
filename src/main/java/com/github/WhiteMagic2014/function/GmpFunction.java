@@ -39,7 +39,15 @@ public abstract class GmpFunction {
     public String handleToolMessage(ChatMessage userMessage, ChatMessage assistantTempMessage) {
         JSONObject functionJson = assistantTempMessage.getTool_calls().getJSONObject(0).getJSONObject("function");
         String callId = assistantTempMessage.getTool_calls().getJSONObject(0).getString("id");
-        JSONObject arguments = functionJson.getJSONObject("arguments");
+        JSONObject arguments;
+        try {
+            arguments = functionJson.getJSONObject("arguments");
+        } catch (Exception e) {
+            arguments = new JSONObject();
+            arguments.put("error", "arguments转换json错误");
+            arguments.put("argumentsString", functionJson.getString("arguments"));
+            throw new RuntimeException();
+        }
         HandleResult handleResult = handle(arguments);
         if (handleResult.getGptProcess()) {
             CreateChatCompletionRequest request = new CreateChatCompletionRequest()
