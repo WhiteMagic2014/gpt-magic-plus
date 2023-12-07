@@ -46,7 +46,7 @@ public abstract class GmpFunction {
             arguments = new JSONObject();
             arguments.put("error", "arguments转换json错误");
             arguments.put("argumentsString", functionJson.getString("arguments"));
-            throw new RuntimeException();
+            throw new RuntimeException("arguments转换json错误");
         }
         HandleResult handleResult = handle(arguments);
         if (handleResult.getGptProcess()) {
