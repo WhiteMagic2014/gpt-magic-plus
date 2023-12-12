@@ -25,6 +25,10 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.3.3
+
+- 优化GmpAssistant, ThreadRun 运行状态为超时的时候 会重试
+
 ### 1.3.2
 
 - 更新[gpt-magic](https://github.com/WhiteMagic2014/gpt-magic.git)版本1.9.2(修复指定调用方法名时 参数拼接错误的问题)

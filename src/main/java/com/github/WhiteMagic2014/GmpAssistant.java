@@ -74,7 +74,12 @@ public class GmpAssistant {
         if (StringUtils.isNotBlank(model)) {
             crr.model(model);
         }
+        return internalHandle(crr);
+    }
+
+    private String internalHandle(CreateRunRequest crr) {
         ThreadRun tr = crr.sendForThreadRun();
+        String threadId = tr.getThread_id();
         String status = tr.getStatus();
         if (status.equals("queued") || status.equals("in_progress")) {
             System.out.println(tr);
@@ -86,14 +91,17 @@ public class GmpAssistant {
                     throw new RuntimeException(e);
                 }
                 ThreadRun trs = new RetrieveRunRequest().threadId(threadId).runId(tr.getId()).sendForThreadRun();
-                System.out.println(trs);
                 status = trs.getStatus();
             } while (status.equals("queued") || status.equals("in_progress"));
         }
         if (status.equals("completed")) {
             return new ListMessagesRequest().threadId(threadId).sendForMessages().get(0).getContent().get(0).getText().getString("value");
+        } else if (status.equals("expired")) {
+            // 如果超时了 就重试
+            return internalHandle(crr);
+        } else {
+            return "threadId: " + threadId + "\nrunId: " + tr.getId() + "\nstatus: " + status;
         }
-        return "threadId: " + threadId + "\nrunId: " + tr.getId() + "\nstatus: " + status;
     }
 
     public String clear(String session) {
