@@ -29,7 +29,7 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 - 优化GmpAssistant, ThreadRun 运行状态为超时的时候 会重试
 - 更新GmpAssistant, 新增threadMessages方法,使用session获得 对话记录(threadMessage)
-- 修复1.3.1中 如果stream=true，且有function的情况下，无法正确发送消息的bug
+- 修复1.3.1中 如果gmp的设置为stream模式,且提供了function但未被调用的情况下，无法正确发送消息的bug
 
 ### 1.3.2 (有bug)
 
