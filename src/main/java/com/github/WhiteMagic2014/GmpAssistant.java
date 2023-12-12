@@ -118,4 +118,10 @@ public class GmpAssistant {
         return result;
     }
 
+    public List<ThreadMessage> threadMessages(String session) {
+        String threadId = assistantContext.getThreadId(session);
+        return new ListMessagesRequest().threadId(threadId).sendForMessages();
+    }
+
+
 }

@@ -1,7 +1,5 @@
 package com.github.WhiteMagic2014;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.github.WhiteMagic2014.beans.ChatLog;
@@ -21,7 +19,6 @@ import com.github.WhiteMagic2014.util.RequestUtil;
 import com.github.WhiteMagic2014.util.VectorUtil;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.ByteArrayOutputStream;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -153,7 +150,14 @@ public class Gmp {
                     JSONObject functionJson = message.getTool_calls().getJSONObject(0).getJSONObject("function");
                     result = handleMap.get(functionJson.getString("name")).handleToolMessage(userMessage, message);
                 } else {
-                    result = (String) request.sendForChoices().get(0).getMessage().getContent();
+                    // 无方法调用
+                    if (stream) {
+                        // 流
+                        result = RequestUtil.streamRequest(request);
+                    } else {
+                        // 非流
+                        result = (String) request.sendForChoices().get(0).getMessage().getContent();
+                    }
                 }
             } else {
                 // 无方法调用

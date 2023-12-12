@@ -28,12 +28,14 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 ### 1.3.3
 
 - 优化GmpAssistant, ThreadRun 运行状态为超时的时候 会重试
+- 更新GmpAssistant, 新增threadMessages方法,使用session获得 对话记录(threadMessage)
+- 修复1.9.1中 如果stream=true，且有function的情况下，无法正确发送消息的bug
 
-### 1.3.2
+### 1.3.2 (有bug)
 
 - 更新[gpt-magic](https://github.com/WhiteMagic2014/gpt-magic.git)版本1.9.2(修复指定调用方法名时 参数拼接错误的问题)
 
-### 1.3.1
+### 1.3.1 (有bug)
 
 - 更新[gpt-magic](https://github.com/WhiteMagic2014/gpt-magic.git)版本1.9.1(stream模式支持function调用)
 - 优化gmp函数调用
