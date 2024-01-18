@@ -25,6 +25,23 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.4.0
+
+- 强化gmp画图功能
+
+```
+   /**
+     * 根据 预设context + 用户prompt 整合 新的 prompt的作图
+     *
+     * @param prompt
+     * @param context
+     * @param style   vivid或natural
+     * @param size    1=1024x1024 ，2=1024x1792 ， 3=1792x1024
+     * @return
+     */
+    public OpenAiImage image(String prompt, String context, String style, int size);
+```
+
 ### 1.3.3
 
 - 优化GmpAssistant, ThreadRun 运行状态为超时的时候 会重试

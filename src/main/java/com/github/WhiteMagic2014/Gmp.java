@@ -279,6 +279,59 @@ public class Gmp {
     }
 
     /**
+     * 根据 预设context + 用户prompt 整合 新的 prompt的作图
+     *
+     * @param prompt
+     * @param context
+     * @param style   vivid或natural
+     * @param size    1=1024x1024 ，2=1024x1792 ， 3=1792x1024
+     * @return
+     */
+    public OpenAiImage image(String prompt, String context, String style, int size) {
+        CreateChatCompletionRequest promptRequest = new CreateChatCompletionRequest()
+                .maxTokens(maxTokens)
+                .addMessage(ChatMessage.systemMessage(context))
+                .addMessage(ChatMessage.userMessage(prompt));
+        if (StringUtils.isNotBlank(model)) {
+            promptRequest.model(model);
+        }
+        String finalPrompt = "";
+        if (stream) {
+            finalPrompt = RequestUtil.streamRequest(promptRequest);
+        } else {
+            finalPrompt = (String) promptRequest.sendForChoices().get(0).getMessage().getContent();
+        }
+        CreateImageRequest request = new CreateImageRequest()
+                .model(GptModel.Dall_E_3)
+                .prompt(finalPrompt);
+        if (style.equals("natural")) {
+            request.styleNatural();
+        } else {
+            request.styleVivid();
+        }
+        if (size == 2) {
+            request.size1024x1792_OnlyDallE3();
+        } else if (size == 3) {
+            request.size1792x1024_OnlyDallE3();
+        } else {
+            request.size1024x1024();
+        }
+        List<OpenAiImage> temp = request.sendForImages();
+        return temp.get(0);
+    }
+
+    /**
+     * 根据 预设context + 用户prompt 整合 新的 prompt的作图 , 默认1024*1024 vivid
+     *
+     * @param prompt
+     * @param context
+     * @return
+     */
+    public OpenAiImage image(String prompt, String context) {
+        return image(prompt, context, "vivid", 1);
+    }
+
+    /**
      * 现在不再推荐在 answer中直接给出全量向量集合，推荐 搭配IndexSearcher 使用
      * 根据相似度较高的几个(vectorNum)切片数据 回答问题
      *
