@@ -25,7 +25,7 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
-### 1.4.1
+###  1.4.0 ~ 1.4.1
 
 - 强化gmp画图功能
 
