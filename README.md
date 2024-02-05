@@ -25,7 +25,11 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
-###  1.4.0 ~ 1.4.1
+### 1.4.2
+
+- 更新gpt-magic版本，升级默认使用的 gpt-4-turbo 模型版本
+
+### 1.4.0 ~ 1.4.1
 
 - 强化gmp画图功能
 
