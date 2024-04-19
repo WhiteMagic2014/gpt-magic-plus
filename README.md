@@ -25,6 +25,10 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.4.3
+
+- 更新gpt-magic版本，现在 vision 可以支持 函数调用 [详见](https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4)
+
 ### 1.4.2
 
 - 更新gpt-magic版本，升级默认使用的 gpt-4-turbo 模型版本
