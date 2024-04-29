@@ -25,6 +25,11 @@ implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 
 ## Version
 
+### 1.4.4.
+
+- 更新gpt-magic版本，现在非stream模式下 使用CreateChatCompletionRequest 可以选择
+  sendForResponse，这样会返回包含token使用情况的response
+
 ### 1.4.3
 
 - 更新gpt-magic版本，现在 vision 可以支持 函数调用 [详见](https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4)
