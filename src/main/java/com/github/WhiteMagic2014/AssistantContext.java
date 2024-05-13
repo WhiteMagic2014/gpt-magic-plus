@@ -1,7 +1,7 @@
 package com.github.WhiteMagic2014;
 
 /**
- * @Description: Assistant session
+ * @Description: Assistant session GmpAssistant 使用的上下文记忆接口
  * @author: magic chen
  * @date: 2023/11/21 14:51
  **/

@@ -5,7 +5,7 @@ import com.github.WhiteMagic2014.beans.ChatLog;
 import java.util.Queue;
 
 /**
- * chat 上下文记忆接口 默认提供了基于内存的实现方式，有能力的最好用redis或者其他外部存储来实现
+ * Gmp chat 使用的上下文记忆接口 默认提供了基于内存的实现方式，有能力的最好用redis或者其他外部存储来实现
  */
 public abstract class ContextMemory {
 
