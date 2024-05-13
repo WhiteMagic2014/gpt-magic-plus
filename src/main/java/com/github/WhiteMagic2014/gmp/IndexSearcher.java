@@ -1,4 +1,4 @@
-package com.github.WhiteMagic2014;
+package com.github.WhiteMagic2014.gmp;
 
 import com.github.WhiteMagic2014.beans.DataIndex;
 

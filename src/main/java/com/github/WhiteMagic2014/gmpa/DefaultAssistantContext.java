@@ -1,4 +1,4 @@
-package com.github.WhiteMagic2014;
+package com.github.WhiteMagic2014.gmpa;
 
 import java.util.HashMap;
 import java.util.Map;

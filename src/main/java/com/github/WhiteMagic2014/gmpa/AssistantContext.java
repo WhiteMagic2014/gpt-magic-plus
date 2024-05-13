@@ -1,4 +1,4 @@
-package com.github.WhiteMagic2014;
+package com.github.WhiteMagic2014.gmpa;
 
 /**
  * @Description: Assistant session GmpAssistant 使用的上下文记忆接口

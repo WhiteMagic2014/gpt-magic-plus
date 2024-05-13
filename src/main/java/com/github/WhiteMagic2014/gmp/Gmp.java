@@ -1,4 +1,4 @@
-package com.github.WhiteMagic2014;
+package com.github.WhiteMagic2014.gmp;
 
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
@@ -27,7 +27,7 @@ public class Gmp {
 
     private IndexSearcher indexSearcher;
 
-    private ContextMemory contextMemory;
+    private GmpContext gmpContext;
 
     private int maxTokens = 500;// 回答问题限制的 token数量
 
@@ -40,17 +40,17 @@ public class Gmp {
 
 
     public Gmp() {
-        this.contextMemory = new DefaultContextMemory(5);
+        this.gmpContext = new DefaultGmpContext(5);
     }
 
     public Gmp(IndexSearcher indexSearcher) {
         this.indexSearcher = indexSearcher;
-        this.contextMemory = new DefaultContextMemory(5);
+        this.gmpContext = new DefaultGmpContext(5);
     }
 
-    public Gmp(IndexSearcher indexSearcher, ContextMemory contextMemory) {
+    public Gmp(IndexSearcher indexSearcher, GmpContext gmpContext) {
         this.indexSearcher = indexSearcher;
-        this.contextMemory = contextMemory;
+        this.gmpContext = gmpContext;
     }
 
     public void setModel(String model) {
@@ -111,7 +111,7 @@ public class Gmp {
         // 有函数
         boolean hasFunction = (gmpFunction != null) && (!gmpFunction.isEmpty());
 
-        String personal = contextMemory.getPersonality(session);
+        String personal = gmpContext.getPersonality(session);
         // 构造初始请求
         CreateChatCompletionRequest request = new CreateChatCompletionRequest()
                 .maxTokens(maxTokens)
@@ -124,7 +124,7 @@ public class Gmp {
             request.model(model);
         }
         // 拼接历史对话记录
-        Queue<ChatLog> queue = contextMemory.chatLogs(session);
+        Queue<ChatLog> queue = gmpContext.chatLogs(session);
         if (queue != null && !queue.isEmpty()) {
             queue.forEach(l -> {
                 request.addMessage(ChatMessage.userMessage(l.getUser()));
@@ -225,7 +225,7 @@ public class Gmp {
      * @return
      */
     public String setPersonality(String session, String setting) {
-        contextMemory.setPersonality(session, setting);
+        gmpContext.setPersonality(session, setting);
         return "已经设定为: " + setting;
     }
 
@@ -236,7 +236,7 @@ public class Gmp {
      * @return
      */
     public String clearLog(String session) {
-        contextMemory.clearChatLogs(session);
+        gmpContext.clearChatLogs(session);
         return "操作成功";
     }
 
@@ -244,7 +244,7 @@ public class Gmp {
      * 增添记忆上下文
      */
     public void addChatLog(String session, String user, String assistant) {
-        contextMemory.addChatLog(session, user, assistant);
+        gmpContext.addChatLog(session, user, assistant);
     }
 
     /**
@@ -254,7 +254,7 @@ public class Gmp {
      * @param chatLogs
      */
     public void setChatLog(String session, Queue<ChatLog> chatLogs) {
-        contextMemory.setChatLog(session, chatLogs);
+        gmpContext.setChatLog(session, chatLogs);
     }
 
     /**
@@ -417,7 +417,7 @@ public class Gmp {
         }
         // 历史对话记录 预处理存档
         List<ChatMessage> chatLog = new ArrayList<>();
-        Queue<ChatLog> queue = contextMemory.chatLogs(session);
+        Queue<ChatLog> queue = gmpContext.chatLogs(session);
         if (queue != null && !queue.isEmpty()) {
             queue.forEach(l -> {
                 chatLog.add(ChatMessage.userMessage(l.getUser()));

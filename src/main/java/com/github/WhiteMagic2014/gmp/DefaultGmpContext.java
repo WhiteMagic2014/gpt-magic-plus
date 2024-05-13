@@ -1,4 +1,4 @@
-package com.github.WhiteMagic2014;
+package com.github.WhiteMagic2014.gmp;
 
 import com.github.WhiteMagic2014.beans.ChatLog;
 
@@ -10,12 +10,12 @@ import java.util.Queue;
 /**
  * 默认基于内存的实现方式，有能力的最好用redis重写
  */
-public class DefaultContextMemory extends ContextMemory {
+public class DefaultGmpContext extends GmpContext {
 
     private Map<String, Queue<ChatLog>> logs = new HashMap<>(); // 对话上下文
     private Map<String, String> personality = new HashMap<>(); //性格设定
 
-    public DefaultContextMemory(int maxLog) {
+    public DefaultGmpContext(int maxLog) {
         super(maxLog);
     }
 

@@ -23,7 +23,110 @@ short
 implementation 'io.github.whitemagic2014:gpt-magic-plus:version'
 ```
 
+## 使用说明
+
+### 密钥和代理设置
+
+```
+ 设置gpt的代理和密钥
+ System.setProperty("OPENAI_API_KEY", key);
+ System.setProperty("OPENAI_API_SERVER", server);
+```
+
+根据功能区分几个功能模块
+
+### gmp包
+
+gpt-magic-plus，一些基础的调用封装，详细的请看源码
+
+```
+  // 不同构造方法
+  Gmp gmp = new Gmp();
+  
+  // 详见 ContextMemory 抽象类，默认提供基于内存的实现，可以自己写基于redis 或者数据库的
+  ContextMemory contextMemory = new DefaultContextMemory(5)
+  Gmp gmp = new Gmp(contextMemory);
+  
+  // 详见 indexSearcher，默认提供基于内存的实现
+  IndexSearcher indexSearcher = new DefaultIndexSearcher();
+  Gmp gmp = new Gmp(indexSearcher,contextMemory);
+  
+  // 按需设置参数
+  gmp.setModel();
+  gmp.setMaxTokens();
+  ...
+  
+  几大功能 
+  1 对话 
+  // 最简单的 对话功能
+  String chat(String session, String prompt);
+  
+  // 支持 图像输入 方法调用(function) 的对话 
+  userMessage = ChatMessage.userMessageWithImageFilePath(String prompt, List<String> filePaths)
+  String chat(String session, ChatMessage userMessage, String model, int maxTokens, List<GmpFunction> gmpFunction);
+  
+  2 作图
+  // 简单作图
+  String image(String prompt);
+  
+  // 根据 预设context + 用户prompt 整合 新的 prompt的作图
+  OpenAiImage image(String prompt, String context, String style, int size);
+  
+  3 问答 事先将知识内容切片计算向量（file embedding），然后计算 问题 与 切片内容 的向量余弦相似度 搜索相关知识作为上下文问答
+  QuestionAnswer answer(String session, String question, List<DataIndex> indices);
+  QuestionAnswer answer(String session, String question, IndexSearcher indexSearcher);
+  
+  3补充 向量制作
+  可以使用 gmp包下的 IndexCreator 将 pdf文件 或者 text文本 制作为 向量文件（xxx.gmpIndex）
+  List<DataIndex> createIndexPdf(String pdfFilePath);
+  List<DataIndex> createIndex(String context, String source);
+  
+```
+
+### gmpa包
+
+gpt-magic-plus-assistant，便捷使用openai assistant，详细的请看源码
+
+```
+  // 不同构造方法
+  GmpAssistant gmpa = new GmpAssistant("assistantId");
+  // 详见 AssistantContext 抽象类，默认提供基于内存的实现，可以自己写基于redis 或者数据库的
+  AssistantContext ac = new DefaultAssistantContext(); 
+  GmpAssistant gmpa = new GmpAssistant("assistantId", GptModel.gpt_3p5_turbo, ac);
+
+  // 使用 openai上创建的assistant
+  // 使用创建gmpa时绑定的assistant，文件使用默认的文件
+  String result = gmpa.chat("session", "你好"); 
+  // 使用指定的assistant，指定的文件（上传到openai的文件）
+  String result = gmpa.chat("session", "你好", assistantId, gfileIds);
+```
+
+### gmpm包
+
+gpt-magic-plus-memory， 携带上下文且能够归纳对话作为记忆的chat，详细的请看源码
+
+```
+  // 不同构造方法
+  GmpMemory gmpm = new GmpMemory();
+  // 详见 MemContext 抽象类，默认提供基于内存的实现，可以自己写基于redis 或者数据库的
+  GmpMemory gmpm = new GmpMemory(new DefaultMemContext());
+  
+  // 按需设置参数
+   gmpm.setModel();
+   gmpm.setMaxTokens();
+   ...
+  
+  // 简单使用
+  String result = gmpm.memoryChat("session", "你好");
+```
+
 ## Version
+
+### 1.5.0
+
+- 调整包结构
+- 新增携带记忆的chat功能
+- 修改readme
 
 ### 1.4.4.
 

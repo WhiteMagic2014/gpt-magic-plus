@@ -1,4 +1,4 @@
-package com.github.WhiteMagic2014;
+package com.github.WhiteMagic2014.gmp;
 
 import com.github.WhiteMagic2014.beans.ChatLog;
 
@@ -7,12 +7,12 @@ import java.util.Queue;
 /**
  * Gmp chat 使用的上下文记忆接口 默认提供了基于内存的实现方式，有能力的最好用redis或者其他外部存储来实现
  */
-public abstract class ContextMemory {
+public abstract class GmpContext {
 
     // 最大上下文层数
     protected int maxLog;
 
-    public ContextMemory(int maxLog) {
+    public GmpContext(int maxLog) {
         this.maxLog = maxLog;
     }
 

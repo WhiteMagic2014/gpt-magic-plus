@@ -1,4 +1,4 @@
-package com.github.WhiteMagic2014;
+package com.github.WhiteMagic2014.gmpa;
 
 import com.github.WhiteMagic2014.gptApi.Assistant.Thread.CreateThreadRequest;
 import com.github.WhiteMagic2014.gptApi.Assistant.Thread.DeleteThreadRequest;
@@ -51,10 +51,23 @@ public class GmpAssistant {
         return chat(session, prompt, assistantId, null);
     }
 
+    /**
+     * @param session
+     * @param prompt
+     * @param fileIds openai 中上传的文件
+     * @return
+     */
     public String chat(String session, String prompt, List<String> fileIds) {
         return chat(session, prompt, assistantId, fileIds);
     }
 
+    /**
+     * @param session
+     * @param prompt
+     * @param assistantId 可以指定使用的assistant
+     * @param fileIds     openai 中上传的文件
+     * @return
+     */
     public String chat(String session, String prompt, String assistantId, List<String> fileIds) {
         String threadId;
         if (assistantContext.checkThreadId(session)) {
@@ -104,6 +117,12 @@ public class GmpAssistant {
         }
     }
 
+    /**
+     * 清除聊天的session
+     *
+     * @param session
+     * @return
+     */
     public String clear(String session) {
         String result = "操作成功";
         if (assistantContext.checkThreadId(session)) {
@@ -118,6 +137,12 @@ public class GmpAssistant {
         return result;
     }
 
+    /**
+     * 获得 某一session下所有的对话
+     *
+     * @param session
+     * @return
+     */
     public List<ThreadMessage> threadMessages(String session) {
         String threadId = assistantContext.getThreadId(session);
         return new ListMessagesRequest().threadId(threadId).sendForMessages();
