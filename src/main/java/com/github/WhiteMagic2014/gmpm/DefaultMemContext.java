@@ -20,6 +20,14 @@ public class DefaultMemContext extends MemContext {
     private Map<String, List<ChatMemory>> memories = new HashMap<>(); // 记忆
 
 
+    public DefaultMemContext() {
+        super();
+    }
+
+    public DefaultMemContext(int maxLog, int maxMemories) {
+        super(maxLog, maxMemories);
+    }
+
     @Override
     public Queue<ChatLog> chatLogs(String session) {
         return logs.get(session);
