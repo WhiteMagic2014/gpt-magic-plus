@@ -122,6 +122,11 @@ gpt-magic-plus-memory， 携带上下文且能够归纳对话作为记忆的chat
 
 ## Version
 
+### 1.5.1
+
+- 升级gmp到1.9.6，支持gpt-4o
+- 修复memContext初始化问题
+
 ### 1.5.0
 
 - 调整包结构
