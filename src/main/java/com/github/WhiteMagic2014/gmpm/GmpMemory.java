@@ -19,7 +19,7 @@ import java.util.Queue;
  */
 public class GmpMemory {
 
-    private String model = GptModel.gpt_3p5_turbo;
+    private String model = GptModel.gpt_4o;
     private int maxTokens = 500;// 回答问题限制的 token数量
     private boolean stream = false;// 是否使用流式请求
     private float temperature = 1.0f; // 拘束 0~2 自由
@@ -128,7 +128,7 @@ public class GmpMemory {
         }
         sb.append("\nuser:").append(prompt);
         String checkResult = originChat(Collections.singletonList(ChatMessage.userMessage(sb.toString())));
-        System.out.println("记忆联想：" + !checkResult.contains("不需要"));
+//        System.out.println("记忆联想：" + !checkResult.contains("不需要"));
         return !checkResult.contains("不需要");
     }
 
@@ -142,7 +142,7 @@ public class GmpMemory {
      */
     public void addChatMemory(String session, String user, String assistant) {
         String topic = originChat(Collections.singletonList(ChatMessage.userMessage("请概括以下user和assistant的对话:\n" + "user:\n" + user + "\nassistant:\n" + assistant)));
-        System.out.println("对话归纳：" + topic);
+//        System.out.println("对话归纳：" + topic);
 
         ChatMemory memory = new ChatMemory();
         memory.setUser(user);

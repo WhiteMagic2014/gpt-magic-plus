@@ -48,6 +48,8 @@ public class DrawFunction extends GmpFunction {
         } catch (Exception e) {
             result = "很抱歉,作图的时候出了一点问题,可以稍后再次尝试";
         }
-        return new HandleResult(true, result);
+        // 如果不需要额外处理
+        // HandleResult.builder().result(result).gptProcess(false).build();
+        return HandleResult.builder().result(result).gptProcess(true).gptModel(GptModel.gpt_4o).build();
     }
 }

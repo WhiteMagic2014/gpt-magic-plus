@@ -13,36 +13,78 @@ public class HandleResult {
     private Boolean gptProcess;
 
     /**
+     * 如果需要gpt再次处理，指定所使用的gpt模型
+     */
+    private String gptModel;
+
+    /**
      * 内部处理结果
      */
     private String result;
 
-    public HandleResult(Boolean gptProcess, String result) {
-        this.gptProcess = gptProcess;
-        this.result = result;
+
+    protected HandleResult(Builder builder) {
+        this.gptProcess = builder.gptProcess;
+        this.gptModel = builder.gptModel;
+        this.result = builder.result;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public String getGptModel() {
+        return gptModel;
     }
 
     public Boolean getGptProcess() {
         return gptProcess;
     }
 
-    public void setGptProcess(Boolean gptProcess) {
-        this.gptProcess = gptProcess;
-    }
-
     public String getResult() {
         return result;
-    }
-
-    public void setResult(String result) {
-        this.result = result;
     }
 
     @Override
     public String toString() {
         return "HandleResult{" +
                 "gptProcess=" + gptProcess +
+                ", gptModel='" + gptModel + '\'' +
                 ", result='" + result + '\'' +
                 '}';
     }
+
+
+    public static class Builder {
+        private Boolean gptProcess;
+        private String gptModel;
+        private String result;
+
+        public Builder() {
+        }
+
+        public Builder gptProcess(Boolean gptProcess) {
+            this.gptProcess = gptProcess;
+            return this;
+        }
+
+        public Builder gptModel(String gptModel) {
+            this.gptModel = gptModel;
+            return this;
+        }
+
+        public Builder result(String result) {
+            this.result = result;
+            return this;
+        }
+
+        public HandleResult build() {
+            if (gptProcess && (gptModel == null || gptModel.isEmpty())) {
+                throw new RuntimeException("gpt再次处理,请指定模型");
+            }
+            return new HandleResult(this);
+        }
+
+    }
+
 }

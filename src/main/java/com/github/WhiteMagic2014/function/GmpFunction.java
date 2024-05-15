@@ -3,7 +3,6 @@ package com.github.WhiteMagic2014.function;
 import com.alibaba.fastjson.JSONObject;
 import com.github.WhiteMagic2014.gptApi.Chat.CreateChatCompletionRequest;
 import com.github.WhiteMagic2014.gptApi.Chat.pojo.ChatMessage;
-import com.github.WhiteMagic2014.gptApi.GptModel;
 import com.github.WhiteMagic2014.tool.FunctionTool;
 import com.github.WhiteMagic2014.util.RequestUtil;
 
@@ -52,7 +51,7 @@ public abstract class GmpFunction {
         if (handleResult.getGptProcess()) {
             CreateChatCompletionRequest request = new CreateChatCompletionRequest()
                     .addTool(getFunctionTool())
-                    .model(GptModel.gpt_4_function)
+                    .model(handleResult.getGptModel())
                     .addMessage(userMessage)
                     .addMessage(assistantTempMessage)// gpt result
                     .addMessage(ChatMessage.toolMessage(callId, handleResult.getResult()));  // send a function message with function_name and custom result

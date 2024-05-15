@@ -122,6 +122,13 @@ gpt-magic-plus-memory， 携带上下文且能够归纳对话作为记忆的chat
 
 ## Version
 
+### 1.5.2
+
+- 升级gmp到1.9.7
+- 支持batch相关api
+- 优化 function模块下的 GmpFunction ,方法 handleToolMessage 中不再默认指定模型,而是使用 HandleResult 中指定的模型
+- 调整 function模块下的 HandleResult ,使用builder的方式来创建对象，新增了gptModel来指定 使用的模型
+
 ### 1.5.1
 
 - 升级gmp到1.9.6，支持gpt-4o
