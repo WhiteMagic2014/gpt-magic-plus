@@ -8,6 +8,7 @@ import com.github.WhiteMagic2014.beans.DataIndex;
 import com.github.WhiteMagic2014.beans.QuestionAnswer;
 import com.github.WhiteMagic2014.function.GmpFunction;
 import com.github.WhiteMagic2014.gptApi.Chat.CreateChatCompletionRequest;
+import com.github.WhiteMagic2014.gptApi.Chat.pojo.ChatCompletion;
 import com.github.WhiteMagic2014.gptApi.Chat.pojo.ChatMessage;
 import com.github.WhiteMagic2014.gptApi.GptModel;
 import com.github.WhiteMagic2014.gptApi.Images.CreateImageRequest;
@@ -29,7 +30,7 @@ public class Gmp {
 
     private GmpContext gmpContext;
 
-    private int maxTokens = 500;// 回答问题限制的 token数量
+    private int maxTokens = 512;// 回答问题限制的 token数量
 
     private boolean stream = false;
 
@@ -139,7 +140,9 @@ public class Gmp {
                 ChatMessage message;
                 if (stream) {
                     // 流
-                    message = RequestUtil.streamRequestV2(request);
+//                    message = RequestUtil.streamRequestV2(request);
+                    ChatCompletion completion = RequestUtil.streamRequestV3(request);
+                    message = completion.getChoices().get(0).getMessage();
                 } else {
                     // 非流
                     message = request.sendForChoices().get(0).getMessage();

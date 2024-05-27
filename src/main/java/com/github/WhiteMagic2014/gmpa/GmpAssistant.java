@@ -8,6 +8,7 @@ import com.github.WhiteMagic2014.gptApi.Assistant.Thread.Run.CreateRunRequest;
 import com.github.WhiteMagic2014.gptApi.Assistant.Thread.Run.RetrieveRunRequest;
 import com.github.WhiteMagic2014.gptApi.Assistant.pojo.ThreadMessage;
 import com.github.WhiteMagic2014.gptApi.Assistant.pojo.ThreadRun;
+import com.github.WhiteMagic2014.tool.resource.ToolResource;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
@@ -47,39 +48,120 @@ public class GmpAssistant {
         this.assistantContext = assistantContext;
     }
 
-    public String chat(String session, String prompt) {
-        return chat(session, prompt, assistantId, null);
+
+    /**
+     * 默认
+     * 创建 对话 thread  不额外指定vectorStore使用assistant默认的
+     *
+     * @param session
+     * @return
+     */
+    public String createThread(String session) {
+        return createThread(session, null);
     }
 
     /**
+     * 创建 对话 thread  指定vectorStore
+     *
      * @param session
-     * @param prompt
-     * @param fileIds openai 中上传的文件
+     * @param vectorStoreIds
      * @return
      */
-    public String chat(String session, String prompt, List<String> fileIds) {
-        return chat(session, prompt, assistantId, fileIds);
-    }
-
-    /**
-     * @param session
-     * @param prompt
-     * @param assistantId 可以指定使用的assistant
-     * @param fileIds     openai 中上传的文件
-     * @return
-     */
-    public String chat(String session, String prompt, String assistantId, List<String> fileIds) {
+    public String createThread(String session, List<String> vectorStoreIds) {
         String threadId;
         if (assistantContext.checkThreadId(session)) {
             threadId = assistantContext.getThreadId(session);
         } else {
-            threadId = new CreateThreadRequest().sendForGptThread().getId();
+            CreateThreadRequest req = new CreateThreadRequest();
+            if (vectorStoreIds != null && !vectorStoreIds.isEmpty()) {
+                req.toolResources(ToolResource.fileSearchResource(vectorStoreIds, null));
+            }
+            threadId = req.sendForGptThread().getId();
             assistantContext.setThreadId(session, threadId);
         }
+        return threadId;
+    }
+
+
+    /**
+     * 对话
+     *
+     * @param session
+     * @param prompt
+     * @return
+     */
+    public String chat(String session, String prompt) {
+        return chat(session, prompt, assistantId);
+    }
+
+
+    /**
+     * 对话
+     *
+     * @param session
+     * @param prompt
+     * @param assistantId 可以指定使用的assistant
+     * @return
+     */
+    public String chat(String session, String prompt, String assistantId) {
+        String threadId = createThread(session);
         //add user message
         ThreadMessage tm = new CreateMessageRequest()
-                .threadId(threadId).fileIds(fileIds)
-                .content(prompt).sendForThreadMessage();
+                .threadId(threadId)
+                .content(prompt)
+                .sendForThreadMessage();
+        CreateRunRequest crr = new CreateRunRequest()
+                .assistantId(assistantId)
+                .instructions(assistantContext.getInstructions(session))
+                .threadId(threadId);
+        if (StringUtils.isNotBlank(model)) {
+            crr.model(model);
+        }
+        return internalHandle(crr);
+    }
+
+
+    /**
+     * 带有图片输入的对话
+     *
+     * @param session
+     * @param prompt
+     * @param imgIds  使用 uploadFile ，purpose=vision 上传图片获得的id
+     * @param imgUrls 图片url  jpeg, jpg, png, gif, webp
+     * @return
+     */
+    public String chatWithImg(String session, String prompt, List<String> imgIds, List<String> imgUrls) {
+        return chatWithImg(session, prompt, imgIds, imgUrls, assistantId);
+    }
+
+
+    /**
+     * 带有图片输入的对话
+     *
+     * @param session
+     * @param prompt
+     * @param imgIds      使用 uploadFile ，purpose=vision 上传图片获得的id
+     * @param imgUrls     图片url  jpeg, jpg, png, gif, webp
+     * @param assistantId
+     * @return
+     */
+    public String chatWithImg(String session, String prompt, List<String> imgIds, List<String> imgUrls, String assistantId) {
+        String threadId = createThread(session);
+        //add user message
+        CreateMessageRequest cmr = new CreateMessageRequest()
+                .threadId(threadId)
+                .addTextContent(prompt);
+        if (imgIds != null && !imgIds.isEmpty()) {
+            for (String imgId : imgIds) {
+                cmr.addImageFileContent(imgId);
+            }
+        }
+        if (imgUrls != null && !imgUrls.isEmpty()) {
+            for (String imgUrl : imgUrls) {
+                cmr.addImageURLContent(imgUrl);
+            }
+        }
+        ThreadMessage tm = cmr.sendForThreadMessage();
         CreateRunRequest crr = new CreateRunRequest()
                 .assistantId(assistantId)
                 .instructions(assistantContext.getInstructions(session))
@@ -124,17 +206,16 @@ public class GmpAssistant {
      * @return
      */
     public String clear(String session) {
-        String result = "操作成功";
         if (assistantContext.checkThreadId(session)) {
             String threadId = assistantContext.getThreadId(session);
-            Boolean del = new DeleteThreadRequest().threadId(threadId).sendForBool();
-            if (del) {
-                assistantContext.clearThreadId(session);
-            } else {
-                result = "操作失败";
+            try {
+                new DeleteThreadRequest().threadId(threadId).sendForBool();
+            } catch (Exception e) {
+                // thread本身已经过期
             }
+            assistantContext.clearThreadId(session);
         }
-        return result;
+        return "操作成功";
     }
 
     /**

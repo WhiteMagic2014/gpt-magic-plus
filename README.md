@@ -94,11 +94,16 @@ gpt-magic-plus-assistant，便捷使用openai assistant，详细的请看源码
   AssistantContext ac = new DefaultAssistantContext(); 
   GmpAssistant gmpa = new GmpAssistant("assistantId", GptModel.gpt_3p5_turbo, ac);
 
+  
+  // 创建对话 thread ,不指定 文件vectorstore,会使用实际对话的 assistant绑定的 文件vectorstore
+  String threadId = gmpa.createThread(String session);
+  // 创建对话 指定本次对话使用的 文件vectorstore
+  String threadId = gmpa.createThread(String session, List<String> vectorStoreIds)
+
   // 使用 openai上创建的assistant
-  // 使用创建gmpa时绑定的assistant，文件使用默认的文件
-  String result = gmpa.chat("session", "你好"); 
-  // 使用指定的assistant，指定的文件（上传到openai的文件）
-  String result = gmpa.chat("session", "你好", assistantId, gfileIds);
+  String result = gmpa.chat(String session, "你好"); 
+  String result = gmpa.chat(String session, "你好", assistantId);
+  String result = gmpa.chatWithImg(String session, "你好", List<String> imgIds, List<String> imgUrls) 
 ```
 
 ### gmpm包
@@ -122,16 +127,23 @@ gpt-magic-plus-memory， 携带上下文且能够归纳对话作为记忆的chat
 
 ## Version
 
+### 1.6.0
+
+- 升级gpt-magic到1.10.0 （大版本更新）
+- assistant 相关代码更新v2版本 支持gpt-4o. 由于openai assistant 文件搜索逻辑变更，需要先创建thread指定
+  vectorstore后再进行对话，不再支持在创建message时同步绑定文件
+- gmp中 chat 在含有function的情况下的stream模式。使用最新的 RequestUtil.streamRequestV3
+
 ### 1.5.2
 
-- 升级gmp到1.9.7
+- 升级gpt-magic到1.9.7
 - 支持batch相关api
 - 优化 function模块下的 GmpFunction ,方法 handleToolMessage 中不再默认指定模型,而是使用 HandleResult 中指定的模型
 - 调整 function模块下的 HandleResult ,使用builder的方式来创建对象，新增了gptModel来指定 使用的模型
 
 ### 1.5.1
 
-- 升级gmp到1.9.6，支持gpt-4o
+- 升级gpt-magic到1.9.6，支持gpt-4o
 - 修复memContext初始化问题
 
 ### 1.5.0
