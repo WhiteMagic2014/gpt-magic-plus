@@ -127,6 +127,11 @@ gpt-magic-plus-memory， 携带上下文且能够归纳对话作为记忆的chat
 
 ## Version
 
+### 1.6.1
+
+- 升级gpt-magic到1.10.4 (修复CreateChatCompletionRequest, CreateRunRequest, CreateThreadAndRunRequest 在tools 没提供的情况下
+  无法正确发送请求的bug)
+
 ### 1.6.0
 
 - 升级gpt-magic到1.10.0 （大版本更新）
